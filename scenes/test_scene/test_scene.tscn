@@ -1,0 +1,49 @@
+[gd_scene format=3 uid="uid://c0oeynkk6lj8k"]
+
+[ext_resource type="Script" uid="uid://lc12efcpdcn1" path="res://scenes/test_scene/test_scene.gd" id="1_8pyld"]
+[ext_resource type="PackedScene" uid="uid://c3b0c15tll05m" path="res://scenes/test_scene/test_tilemap.tscn" id="2_mndh0"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_mndh0"]
+sky_horizon_color = Color(0.66224277, 0.6717428, 0.6867428, 1)
+ground_horizon_color = Color(0.66224277, 0.6717428, 0.6867428, 1)
+
+[sub_resource type="Sky" id="Sky_1x7oe"]
+sky_material = SubResource("ProceduralSkyMaterial_mndh0")
+
+[sub_resource type="Environment" id="Environment_l4ihe"]
+background_mode = 2
+sky = SubResource("Sky_1x7oe")
+
+[sub_resource type="ViewportTexture" id="ViewportTexture_yeiif"]
+viewport_path = NodePath("SubViewport")
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_8pyld"]
+resource_local_to_scene = true
+albedo_texture = SubResource("ViewportTexture_yeiif")
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_yeiif"]
+resource_local_to_scene = true
+material = SubResource("StandardMaterial3D_8pyld")
+size = Vector2(4, 4)
+
+[node name="TestScene" type="Node3D" unique_id=1411787965]
+script = ExtResource("1_8pyld")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=2009360600]
+transform = Transform3D(-0.8660254, -0.43301278, 0.25, 0, 0.49999997, 0.86602545, -0.50000006, 0.75, -0.43301266, 0, 0, 0)
+shadow_enabled = true
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1374679162]
+environment = SubResource("Environment_l4ihe")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=2006431272]
+mesh = SubResource("PlaneMesh_yeiif")
+
+[node name="SubViewport" type="SubViewport" parent="." unique_id=1942032928]
+size = Vector2i(2000, 2000)
+
+[node name="TestTilemap" parent="SubViewport" unique_id=1249042114 instance=ExtResource("2_mndh0")]
+position = Vector2(1000, 1000)
+
+[node name="Camera3D" type="Camera3D" parent="." unique_id=1287879572]
+transform = Transform3D(1, 0, 0, 0, 0.5047586, 0.86326057, 0, -0.86326057, 0.5047586, 0, 0.72017974, 0.6166107)
