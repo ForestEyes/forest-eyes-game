@@ -29,6 +29,7 @@ var _is_dragging: bool = false
 func _ready() -> void:
     # Prende o mouse dentro da janela do jogo
     Input.mouse_mode = Input.MOUSE_MODE_CONFINED
+    _apply_zoom(min_zoom)
 
 func _process(delta: float) -> void:
     if not _is_dragging:
