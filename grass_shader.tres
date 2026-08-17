@@ -1,0 +1,23 @@
+[gd_resource type="VisualShader" format=3 uid="uid://cicem1q2tu8kb"]
+
+[sub_resource type="Gradient" id="Gradient_kddlq"]
+offsets = PackedFloat32Array(0, 0.54816514, 0.6857798, 1)
+colors = PackedColorArray(0.068504624, 0.08769179, 0.0074919905, 1, 0.58521014, 0.49327463, 0.17097723, 1, 0.91041255, 0.73297274, 0.11288834, 1, 0.78094304, 0.7785758, 0.20773372, 1)
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_w0nfr"]
+noise_type = 2
+fractal_octaves = 2
+cellular_return_type = 0
+domain_warp_frequency = -0.995
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_j4ohn"]
+noise = SubResource("FastNoiseLite_w0nfr")
+color_ramp = SubResource("Gradient_kddlq")
+
+[sub_resource type="VisualShaderNodeTexture" id="VisualShaderNodeTexture_0xuw5"]
+texture = SubResource("NoiseTexture2D_j4ohn")
+
+[resource]
+nodes/fragment/2/node = SubResource("VisualShaderNodeTexture_0xuw5")
+nodes/fragment/2/position = Vector2(-144, 48)
+nodes/fragment/connections = PackedInt32Array(2, 0, 0, 0)
