@@ -1,0 +1,134 @@
+[gd_scene format=3 uid="uid://dw8ayheqmckgq"]
+
+[ext_resource type="PackedScene" uid="uid://d1fix0donypra" path="res://shaders/shader_tests/hexagon_cylinder.glb" id="1_s37jj"]
+[ext_resource type="Shader" uid="uid://cicem1q2tu8kb" path="res://shaders/grass_shader.tres" id="3_14ang"]
+[ext_resource type="Shader" uid="uid://chi46a58tnce7" path="res://shaders/water_shader.tres" id="3_h5org"]
+[ext_resource type="PackedScene" uid="uid://bvkjh8ejfmh7a" path="res://shaders/shader_tests/hexagon.glb" id="4_8qbek"]
+[ext_resource type="Shader" uid="uid://cnjwxyjrbr78d" path="res://shaders/river_shader.tres" id="4_14ang"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_h5org"]
+render_priority = 0
+shader = ExtResource("3_14ang")
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_p4bue"]
+render_priority = 0
+shader = ExtResource("3_h5org")
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_ata1u"]
+render_priority = 0
+shader = ExtResource("4_14ang")
+
+[node name="Node3D" type="Node3D" unique_id=1182190876]
+
+[node name="Ground" parent="." unique_id=994926050 instance=ExtResource("1_s37jj")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.34977663, -1.1920929e-07, -0.41471767)
+
+[node name="Cylinder" parent="Ground" index="0" unique_id=1585559457]
+material_override = SubResource("ShaderMaterial_h5org")
+
+[node name="Ground2" parent="." unique_id=1788084672 instance=ExtResource("1_s37jj")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5854615, -1.1920929e-07, -1.9485072)
+
+[node name="Cylinder" parent="Ground2" index="0" unique_id=1585559457]
+material_override = SubResource("ShaderMaterial_h5org")
+
+[node name="Ground3" parent="." unique_id=692668262 instance=ExtResource("1_s37jj")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.2476045, -1.1920929e-07, -1.985917)
+
+[node name="Cylinder" parent="Ground3" index="0" unique_id=1585559457]
+material_override = SubResource("ShaderMaterial_h5org")
+
+[node name="Ground4" parent="." unique_id=425432205 instance=ExtResource("1_s37jj")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.167879, -1.1920929e-07, -0.41471815)
+
+[node name="Cylinder" parent="Ground4" index="0" unique_id=1585559457]
+material_override = SubResource("ShaderMaterial_h5org")
+
+[node name="Ground5" parent="." unique_id=61883563 instance=ExtResource("1_s37jj")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.2625692, -1.1920929e-07, 1.1415173)
+
+[node name="Cylinder" parent="Ground5" index="0" unique_id=1585559457]
+material_override = SubResource("ShaderMaterial_h5org")
+
+[node name="Water" parent="." unique_id=923391823 instance=ExtResource("1_s37jj")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.4742416, -1.1920929e-07, -0.40921837)
+
+[node name="Cylinder" parent="Water" index="0" unique_id=1585559457]
+material_override = SubResource("ShaderMaterial_p4bue")
+
+[node name="Water2" parent="." unique_id=1315814978 instance=ExtResource("1_s37jj")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.3795514, -1.1920929e-07, -1.9504898)
+
+[node name="Cylinder" parent="Water2" index="0" unique_id=1585559457]
+material_override = SubResource("ShaderMaterial_p4bue")
+
+[node name="Water3" parent="." unique_id=105553642 instance=ExtResource("1_s37jj")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.2848613, -1.1920929e-07, -0.3942542)
+
+[node name="Cylinder" parent="Water3" index="0" unique_id=1585559457]
+material_override = SubResource("ShaderMaterial_p4bue")
+
+[node name="WetGround" parent="." unique_id=1622272006 instance=ExtResource("1_s37jj")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5528989, -1.1920929e-07, 1.1395667)
+
+[node name="Cylinder" parent="WetGround" index="0" unique_id=1585559457]
+material_override = SubResource("ShaderMaterial_h5org")
+
+[node name="hex" parent="WetGround" unique_id=495545939 instance=ExtResource("4_8qbek")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.0083714, 0)
+
+[node name="Cylinder" parent="WetGround/hex" index="0" unique_id=1615802538]
+material_override = SubResource("ShaderMaterial_ata1u")
+
+[node name="WetGround2" parent="." unique_id=607954281 instance=ExtResource("1_s37jj")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.3641186, -1.1920929e-07, 1.1560645)
+
+[node name="Cylinder" parent="WetGround2" index="0" unique_id=1585559457]
+material_override = SubResource("ShaderMaterial_h5org")
+
+[node name="hex" parent="WetGround2" unique_id=1744410614 instance=ExtResource("4_8qbek")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.0083714, 0)
+
+[node name="Cylinder" parent="WetGround2/hex" index="0" unique_id=1615802538]
+material_override = SubResource("ShaderMaterial_ata1u")
+
+[node name="WetGround3" parent="." unique_id=863409353 instance=ExtResource("1_s37jj")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.4565302, -1.1920929e-07, 2.7081044)
+
+[node name="Cylinder" parent="WetGround3" index="0" unique_id=1585559457]
+material_override = SubResource("ShaderMaterial_h5org")
+
+[node name="hex" parent="WetGround3" unique_id=560871202 instance=ExtResource("4_8qbek")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.0083714, 0)
+
+[node name="Cylinder" parent="WetGround3/hex" index="0" unique_id=1615802538]
+material_override = SubResource("ShaderMaterial_ata1u")
+
+[node name="WetGround4" parent="." unique_id=1200636669 instance=ExtResource("1_s37jj")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.274077, -1.1920929e-07, 2.7155862)
+
+[node name="Cylinder" parent="WetGround4" index="0" unique_id=1585559457]
+material_override = SubResource("ShaderMaterial_h5org")
+
+[node name="hex" parent="WetGround4" unique_id=799731613 instance=ExtResource("4_8qbek")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.0083714, 0)
+
+[node name="Cylinder" parent="WetGround4/hex" index="0" unique_id=1615802538]
+material_override = SubResource("ShaderMaterial_ata1u")
+
+[editable path="Ground"]
+[editable path="Ground2"]
+[editable path="Ground3"]
+[editable path="Ground4"]
+[editable path="Ground5"]
+[editable path="Water"]
+[editable path="Water2"]
+[editable path="Water3"]
+[editable path="WetGround"]
+[editable path="WetGround/hex"]
+[editable path="WetGround2"]
+[editable path="WetGround2/hex"]
+[editable path="WetGround3"]
+[editable path="WetGround3/hex"]
+[editable path="WetGround4"]
+[editable path="WetGround4/hex"]
