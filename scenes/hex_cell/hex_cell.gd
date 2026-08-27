@@ -6,7 +6,7 @@ extends Node3D
 @export var tree_meshes: Array[PackedScene]
 
 
-var current_level: int = 100
+@export var current_level: int = 15
 
 func _ready() -> void:
     populate_cell()
@@ -34,14 +34,16 @@ func populate_cell() -> void:
     if hex_radius <= 0.0:
         hex_radius = 1.0
 
-    var spawn_count: int = max(1, current_level * 2)
+    var spawn_count: int = max(1, current_level * 4)
     var rng: RandomNumberGenerator = RandomNumberGenerator.new()
     rng.randomize()
 
     for _index in range(spawn_count):
         var spawn_position: Vector2 = _get_random_point_in_hex(hex_radius, rng)
-        var tree_scene: PackedScene = tree_meshes[rng.randi_range(0, tree_meshes.size() - 1)]
+        var rng_index: int = rng.rand_weighted([.7, .2, .1])
+        var tree_scene: PackedScene = tree_meshes[rng_index]
         var tree_instance: Node3D = tree_scene.instantiate()
+        tree_instance.scale *= 1 + (randf_range(0., float(rng_index)))
 
         var mesh_height: float = 0.5
         if mesh_node.has_method("get") and mesh_node.get("height") != null:

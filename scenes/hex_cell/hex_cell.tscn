@@ -6,7 +6,7 @@
 [ext_resource type="PackedScene" uid="uid://dp1uexaml3pfa" path="res://scenes/test_scene/Tree_2.tscn" id="3_y2k05"]
 [ext_resource type="PackedScene" uid="uid://cs4cok0lhcwu" path="res://scenes/test_scene/Tree_3.tscn" id="4_uxwae"]
 
-[sub_resource type="ArrayMesh" id="ArrayMesh_yx56t"]
+[sub_resource type="ArrayMesh" id="ArrayMesh_y2k05"]
 _surfaces = [{
 "aabb": AABB(-1, -0.25, -0.8660254, 2, 0.5, 1.7320508),
 "format": 34359738375,
@@ -21,5 +21,5 @@ script = ExtResource("1_t7s5s")
 tree_meshes = Array[PackedScene]([ExtResource("2_7os7r"), ExtResource("3_y2k05"), ExtResource("4_uxwae")])
 
 [node name="HexCellMesh" type="MeshInstance3D" parent="." unique_id=640583737]
-mesh = SubResource("ArrayMesh_yx56t")
+mesh = SubResource("ArrayMesh_y2k05")
 script = ExtResource("2_8ltkn")

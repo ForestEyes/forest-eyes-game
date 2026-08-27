@@ -42,7 +42,7 @@ min_zoom = 5.0
 max_zoom = 25.0
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=2009360600]
-transform = Transform3D(-0.76656276, -0.61084974, 0.19810152, 0.6338644, -0.67029285, 0.38590604, -0.10294458, 0.4213907, 0.9010174, 0.19385332, 1.5262556, 0.13937199)
+transform = Transform3D(-0.99145806, -0.11639968, -0.058839496, 0.029985063, -0.64247215, 0.765722, -0.12693259, 0.7574173, 0.6404746, 0.19385332, 1.5262556, 0.13937199)
 shadow_enabled = true
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1374679162]
@@ -58,10 +58,28 @@ size = Vector2i(2000, 2000)
 position = Vector2(1000, 1000)
 
 [node name="HexCell" parent="." unique_id=1032575564 instance=ExtResource("5_wgdak")]
-transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 0.1486448, 0.25029463, -0.5990679)
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 0.18295419, 0.25029463, -0.5990679)
+current_level = 7
 
 [node name="HexCell2" parent="." unique_id=1034026135 instance=ExtResource("5_wgdak")]
-transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 1.9102347, 0.25029463, -0.59687245)
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 1.9960072, 0.25029463, -0.59687245)
 
 [node name="HexCell3" parent="." unique_id=379807930 instance=ExtResource("5_wgdak")]
-transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 1.0350952, 0.25029463, 0.96836483)
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 1.0694046, 0.25029463, 0.96836483)
+current_level = 10
+
+[node name="HexCell4" parent="." unique_id=2054465202 instance=ExtResource("5_wgdak")]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 2.8840218, 0.25029463, 0.96836483)
+current_level = 5
+
+[node name="HexCell5" parent="." unique_id=1486100644 instance=ExtResource("5_wgdak")]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 2.9726133, 0.25029463, -2.1238594)
+current_level = 2
+
+[node name="HexCell7" parent="." unique_id=229677782 instance=ExtResource("5_wgdak")]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 3.7639627, 0.25029463, -0.5731087)
+current_level = 4
+
+[node name="HexCell6" parent="." unique_id=618147898 instance=ExtResource("5_wgdak")]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 1.1042595, 0.25029463, -2.169361)
+current_level = 1

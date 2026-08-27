@@ -17,7 +17,7 @@ extends Node3D
 @export var limit_bottom: float = 50.0
 
 @export_category("Zoom")
-@export var zoom_speed: float = 2.0
+@export var zoom_speed: float = 30.0
 @export var min_zoom: float = 5.0
 @export var max_zoom: float = 30.0
 
