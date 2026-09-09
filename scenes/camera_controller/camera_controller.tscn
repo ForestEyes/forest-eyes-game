@@ -4,6 +4,7 @@
 [ext_resource type="Script" uid="uid://dlgtyt1wec5fn" path="res://scenes/camera_controller/camera_controller.gd" id="1_wqtiv"]
 [ext_resource type="Script" uid="uid://csjccrhj5wnx7" path="res://addons/phantom_camera/scripts/phantom_camera/phantom_camera_3d.gd" id="2_wqtiv"]
 [ext_resource type="Script" uid="uid://8umksf8e80fw" path="res://addons/phantom_camera/scripts/resources/tween_resource.gd" id="3_yg3ht"]
+[ext_resource type="Script" uid="uid://d3eg2cdl7lslt" path="res://scenes/camera_controller/cursor_ray_cast.gd" id="5_yg3ht"]
 
 [sub_resource type="Resource" id="Resource_a0rq3"]
 script = ExtResource("3_yg3ht")
@@ -13,7 +14,6 @@ script = ExtResource("1_wqtiv")
 pan_speed = 4.0
 edge_margin = 5.0
 drag_sensitivity = 0.005
-zoom_speed = 0.25
 min_zoom = 1.0
 max_zoom = 5.0
 
@@ -43,3 +43,8 @@ align_rotation_with_view = Callable()
 metadata/_custom_type_script = "uid://csjccrhj5wnx7"
 
 [node name="CameraTarget" type="Marker3D" parent="." unique_id=1052880435]
+
+[node name="CursorRayCast" type="RayCast3D" parent="." unique_id=552660469]
+collide_with_areas = true
+collide_with_bodies = false
+script = ExtResource("5_yg3ht")

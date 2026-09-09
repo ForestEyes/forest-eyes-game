@@ -36,8 +36,14 @@ const NEIGHBORS_OFFSET: Dictionary[StringName, Vector3] = {
 
 func _ready() -> void:
 	world_cells = get_parent()
-
 	populate_cell()
+
+
+func increase_level(ammount: int) -> void:
+	current_level += ammount
+	#spawn_tree(get_hex_radius(), get_mesh_node(), ammount*2)
+	populate_cell()
+
 
 func populate_cell() -> void:
 	var water_mesh: Node3D = get_node_or_null("WaterShader") as Node3D
@@ -54,7 +60,7 @@ func populate_cell() -> void:
 		return
 
 	var children_to_remove: Array[Node] = []
-	for child in get_children():
+	for child:Node in get_children().filter(func(x:Node)->bool: return x is not Area3D):
 		if child != water_mesh and child != grass_mesh and child != river_mesh:
 			children_to_remove.append(child)
 
