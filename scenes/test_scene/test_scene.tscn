@@ -41,20 +41,33 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.25, 0)
 script = ExtResource("4_wgdak")
 height = 10
 width = 10
+cell_level = 5
 water_border_distance = 1
 water_chance = 0.05
 water_neighbor_influence = 0.1
 
 [node name="HexCell" parent="WorldCells" unique_id=1032575564 instance=ExtResource("5_wgdak")]
+cell_type = null
 current_level = 7
+trees_per_level = null
+max_trees_per_cell = null
+tree_visibility_distance = null
 
 [node name="HexCell2" parent="WorldCells" unique_id=446505729 instance=ExtResource("5_wgdak")]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 1.55, 0, 0.891)
+cell_type = null
 current_level = 7
+trees_per_level = null
+max_trees_per_cell = null
+tree_visibility_distance = null
 
 [node name="HexCell3" parent="WorldCells" unique_id=231115819 instance=ExtResource("5_wgdak")]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 0, 0, 1.782)
+cell_type = null
 current_level = 7
+trees_per_level = null
+max_trees_per_cell = null
+tree_visibility_distance = null
 
 [node name="UserInterface" type="CanvasLayer" parent="." unique_id=6170724]
 
@@ -95,23 +108,25 @@ value = 5.0
 
 [node name="WidthValueLabel" type="Label" parent="UserInterface/Panel/MarginContainer/VBoxContainer" unique_id=317635927]
 layout_mode = 2
-text = "Width: 50"
+text = "Width: 10"
 
 [node name="WidthSlider" type="HSlider" parent="UserInterface/Panel/MarginContainer/VBoxContainer" unique_id=268774940]
 custom_minimum_size = Vector2(240, 20)
 layout_mode = 2
 min_value = 1.0
-value = 50.0
+max_value = 50.0
+value = 10.0
 
 [node name="HeightValueLabel" type="Label" parent="UserInterface/Panel/MarginContainer/VBoxContainer" unique_id=1132468169]
 layout_mode = 2
-text = "Height: 50"
+text = "Height: 10"
 
 [node name="HeightSlider" type="HSlider" parent="UserInterface/Panel/MarginContainer/VBoxContainer" unique_id=494339860]
 custom_minimum_size = Vector2(240, 20)
 layout_mode = 2
 min_value = 1.0
-value = 50.0
+max_value = 50.0
+value = 10.0
 
 [node name="RegenerateButton" type="Button" parent="UserInterface/Panel/MarginContainer/VBoxContainer" unique_id=738374345]
 layout_mode = 2

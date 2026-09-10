@@ -22,6 +22,11 @@ signal world_generated(center: Vector3, bounds: AABB)
 @export_range(0.0, 100.0, 1.0) var culling_distance_offset: float = 10.0
 @export_range(0.05, 1.0, 0.05) var culling_update_interval: float = 0.2
 @export_range(2, 20, 1) var tree_chunk_size: int = 2
+@export_group("Tree LOD")
+@export var enable_tree_lod: bool = true
+@export_range(0.0, 100.0, 0.5) var tree_lod_start_zoom: float = 8.0
+@export_range(0.0, 100.0, 0.5) var tree_lod_end_zoom: float = 25.0
+@export_range(0.05, 1.0, 0.05) var tree_lod_min_ratio: float = 0.2
 @export_group("Test Culling")
 @export var use_fixed_test_culling: bool = true
 @export_range(0.1, 100.0, 0.1) var fixed_test_culling_distance: float = 10
@@ -34,6 +39,7 @@ var generated_tree_count: int = 0
 var _culling_time: float = 0.0
 var _generated_tree_root: Node3D
 var _generated_tree_chunks: Dictionary[Vector2i, Node3D] = {}
+var _tree_generation_seed: int = 0
 
 
 const HEX_RADIUS: float = 1.0
@@ -94,8 +100,10 @@ func generate_world() -> void:
 	var rng := RandomNumberGenerator.new()
 	if random_seed == 0:
 		rng.randomize()
+		_tree_generation_seed = rng.seed
 	else:
 		rng.seed = random_seed
+		_tree_generation_seed = random_seed
 
 	for row in range(height):
 		for column in range(width):
@@ -121,6 +129,17 @@ func generate_world() -> void:
 	_update_cell_visibility()
 	var bounds: AABB = get_world_bounds()
 	world_generated.emit(bounds.get_center(), bounds)
+
+
+func rebuild_tree_batches() -> void:
+	generated_tree_count = 0
+	for cell: HexCell in cells.values():
+		if cell.cell_type == "forest":
+			generated_tree_count += cell.get_tree_count()
+
+	_generate_world_trees()
+	if enable_distance_culling:
+		_update_cell_visibility()
 
 
 func _generate_world_trees() -> void:
@@ -160,25 +179,22 @@ func _generate_world_trees() -> void:
 				chunk_mesh_transforms.append([])
 			transforms_by_chunk[chunk_coordinate] = chunk_mesh_transforms
 
-	var rng := RandomNumberGenerator.new()
-	rng.randomize()
 	for coordinate: Vector2i in cells:
 		var cell: HexCell = cells[coordinate]
 		if cell.cell_type != "forest":
 			continue
 		var chunk_coordinate := _get_tree_chunk_coordinate(coordinate)
 		var transforms_by_mesh: Array = transforms_by_chunk[chunk_coordinate]
+		var cell_rng := RandomNumberGenerator.new()
+		cell_rng.seed = _get_cell_tree_seed(coordinate)
 
-		var spawn_count: int = mini(
-			cell.max_trees_per_cell,
-			maxi(0, int(cell.current_level * cell.trees_per_level))
-		)
+		var spawn_count: int = cell.get_tree_count()
 		for _tree_index in range(spawn_count):
-			var spawn_position: Vector2 = _get_random_point_in_hex(rng)
-			var variant_index: int = rng.rand_weighted([0.7, 0.2, 0.1])
-			var tree_scale: float = 1.0 + rng.randf_range(0.0, variant_index)
+			var spawn_position: Vector2 = _get_random_point_in_hex(cell_rng)
+			var variant_index: int = cell_rng.rand_weighted([0.7, 0.2, 0.1])
+			var tree_scale: float = 1.0 + cell_rng.randf_range(0.0, variant_index)
 			var tree_transform := Transform3D(
-				Basis(Vector3.UP, rng.randf_range(0.0, TAU)).scaled(Vector3.ONE * tree_scale),
+				Basis(Vector3.UP, cell_rng.randf_range(0.0, TAU)).scaled(Vector3.ONE * tree_scale),
 				cell.position + Vector3(spawn_position.x, 0.05, spawn_position.y)
 			)
 
@@ -186,7 +202,6 @@ func _generate_world_trees() -> void:
 				if tree_mesh_data[mesh_index]["tree_index"] == variant_index:
 					var base_transform: Transform3D = tree_mesh_data[mesh_index]["transform"]
 					transforms_by_mesh[mesh_index].append(tree_transform * base_transform)
-
 	_generated_tree_root = Node3D.new()
 	_generated_tree_root.name = "GeneratedTrees"
 	add_child(_generated_tree_root)
@@ -216,6 +231,10 @@ func _generate_world_trees() -> void:
 			var multimesh_instance := MultiMeshInstance3D.new()
 			multimesh_instance.multimesh = multimesh
 			chunk_root.add_child(multimesh_instance)
+
+
+func _get_cell_tree_seed(coordinate: Vector2i) -> int:
+	return _tree_generation_seed + coordinate.x * 73856093 + coordinate.y * 19349663
 
 
 func _get_chunk_center(chunk_coordinate: Vector2i) -> Vector3:
@@ -297,11 +316,11 @@ func _update_cell_visibility() -> void:
 	if camera_target == null:
 		return
 
+	var phantom_camera: Node = camera_controller.get_node_or_null("PhantomCamera3D")
 	var culling_distance: float
 	if use_fixed_test_culling:
 		culling_distance = fixed_test_culling_distance
 	else:
-		var phantom_camera: Node = camera_controller.get_node_or_null("PhantomCamera3D")
 		if phantom_camera == null:
 			return
 		var zoom_distance: float = phantom_camera.get("spring_length")
@@ -323,7 +342,9 @@ func _update_cell_visibility() -> void:
 			chunk.global_position.x - target_position.x,
 			chunk.global_position.z - target_position.z
 		)
-		_set_tree_chunk_visible(chunk, chunk_offset.length_squared() < culling_distance_squared)
+		var chunk_is_visible: bool = chunk_offset.length_squared() < culling_distance_squared
+		_set_tree_chunk_visible(chunk, chunk_is_visible)
+		_update_tree_chunk_lod(chunk, phantom_camera, chunk_is_visible)
 
 
 func _set_cell_visible(cell: HexCell, is_visible: bool) -> void:
@@ -341,6 +362,30 @@ func _set_cell_visible(cell: HexCell, is_visible: bool) -> void:
 func _set_tree_chunk_visible(chunk: Node3D, is_visible: bool) -> void:
 	for child: Node in chunk.get_children():
 		_set_visual_descendants_visible(child, is_visible)
+
+
+func _update_tree_chunk_lod(chunk: Node3D, phantom_camera: Node, chunk_is_visible: bool) -> void:
+	var lod_ratio: float = 1.0
+	if enable_tree_lod and phantom_camera != null:
+		var zoom_distance: float = phantom_camera.get("spring_length")
+		var zoom_range: float = maxf(0.001, tree_lod_end_zoom - tree_lod_start_zoom)
+		lod_ratio = clampf(
+			1.0 - (zoom_distance - tree_lod_start_zoom) / zoom_range,
+			tree_lod_min_ratio,
+			1.0
+		)
+
+	for child: Node in chunk.get_children():
+		_set_multimesh_lod(child, lod_ratio, chunk_is_visible)
+
+
+func _set_multimesh_lod(node: Node, lod_ratio: float, chunk_is_visible: bool) -> void:
+	if node is MultiMeshInstance3D:
+		var multimesh_instance: MultiMeshInstance3D = node as MultiMeshInstance3D
+		multimesh_instance.visible = chunk_is_visible and (not enable_tree_lod or lod_ratio >= 0.5)
+
+	for child: Node in node.get_children():
+		_set_multimesh_lod(child, lod_ratio, chunk_is_visible)
 
 
 func _set_visual_descendants_visible(node: Node, is_visible: bool) -> void:
