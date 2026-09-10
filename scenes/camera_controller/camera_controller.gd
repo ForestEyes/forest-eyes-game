@@ -17,7 +17,6 @@ extends Node3D
 @export var limit_bottom: float = 50.0
 
 @export_category("Zoom")
-@export var zoom_speed: float = 30.0
 @export var min_zoom: float = 5.0
 @export var max_zoom: float = 30.0
 
@@ -26,90 +25,124 @@ extends Node3D
 
 var _is_dragging: bool = false
 
+const ZOOM_STEP_RATIO: float = 0.1
+
 func _ready() -> void:
-    # Prende o mouse dentro da janela do jogo
-    Input.mouse_mode = Input.MOUSE_MODE_CONFINED
-    _apply_zoom(min_zoom)
+	# Prende o mouse dentro da janela do jogo
+	Input.mouse_mode = Input.MOUSE_MODE_CONFINED
+	_apply_zoom(min_zoom)
+
+	var world_cells: WorldCells = get_parent().get_node_or_null("WorldCells") as WorldCells
+	if world_cells == null:
+		return
+
+	world_cells.world_generated.connect(_on_world_generated)
+	if world_cells.is_generated:
+		var bounds: AABB = world_cells.get_world_bounds()
+		_on_world_generated(bounds.get_center(), bounds)
+
+
+func _on_world_generated(center: Vector3, bounds: AABB) -> void:
+	var world_cells: WorldCells = get_parent().get_node_or_null("WorldCells") as WorldCells
+	if world_cells == null:
+		return
+
+	var world_center: Vector3 = world_cells.to_global(center)
+	var world_min: Vector3 = world_cells.to_global(bounds.position)
+	var world_max: Vector3 = world_cells.to_global(bounds.end)
+
+	limit_left = minf(world_min.x, world_max.x)
+	limit_right = maxf(world_min.x, world_max.x)
+	limit_top = minf(world_min.z, world_max.z)
+	limit_bottom = maxf(world_min.z, world_max.z)
+
+	var target_position: Vector3 = camera_target.global_position
+	target_position.x = world_center.x
+	target_position.z = world_center.z
+	camera_target.global_position = _apply_limits(target_position)
 
 func _process(delta: float) -> void:
-    if not _is_dragging:
-        _handle_edge_movement(delta)
+	if not _is_dragging:
+		_handle_edge_movement(delta)
 
 func _handle_edge_movement(delta: float) -> void:
-    var viewport := get_viewport()
-    var mouse_pos := viewport.get_mouse_position()
-    var screen_size := viewport.get_visible_rect().size
-    
-    var input_dir := Vector2.ZERO
+	var viewport := get_viewport()
+	var mouse_pos := viewport.get_mouse_position()
+	var screen_size := viewport.get_visible_rect().size
+	
+	var input_dir := Vector2.ZERO
 
-    if Rect2(Vector2.ZERO, screen_size).has_point(mouse_pos):
-        if mouse_pos.x <= edge_margin:
-            input_dir.x -= 1
-        elif mouse_pos.x >= screen_size.x - edge_margin:
-            input_dir.x += 1
-            
-        if mouse_pos.y <= edge_margin:
-            input_dir.y -= 1
-        elif mouse_pos.y >= screen_size.y - edge_margin:
-            input_dir.y += 1
+	if Rect2(Vector2.ZERO, screen_size).has_point(mouse_pos):
+		if mouse_pos.x <= edge_margin:
+			input_dir.x -= 1
+		elif mouse_pos.x >= screen_size.x - edge_margin:
+			input_dir.x += 1
+			
+		if mouse_pos.y <= edge_margin:
+			input_dir.y -= 1
+		elif mouse_pos.y >= screen_size.y - edge_margin:
+			input_dir.y += 1
 
-    if input_dir == Vector2.ZERO:
-        return
+	if input_dir == Vector2.ZERO:
+		return
 
-    input_dir = input_dir.normalized()
+	input_dir = input_dir.normalized()
 
-    var move_dir := _get_camera_direction(input_dir)
-    var new_position: Vector3 = camera_target.global_position + (move_dir * pan_speed * delta)
-    
-    camera_target.global_position = _apply_limits(new_position)
+	var move_dir := _get_camera_direction(input_dir)
+	var new_position: Vector3 = camera_target.global_position + (move_dir * pan_speed * delta)
+	
+	camera_target.global_position = _apply_limits(new_position)
 
 func _unhandled_input(event: InputEvent) -> void:
-    if event.is_action_pressed("ui_cancel"):
-        Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-        _is_dragging = false
-        
-    if event is InputEventMouseButton and event.is_pressed() and event.button_index == MOUSE_BUTTON_LEFT:
-        if Input.mouse_mode != Input.MOUSE_MODE_CONFINED:
-            Input.mouse_mode = Input.MOUSE_MODE_CONFINED
+	if event.is_action_pressed("ui_cancel"):
+		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+		_is_dragging = false
+		
+	if event is InputEventMouseButton and event.is_pressed() and event.button_index == MOUSE_BUTTON_LEFT:
+		if Input.mouse_mode != Input.MOUSE_MODE_CONFINED:
+			Input.mouse_mode = Input.MOUSE_MODE_CONFINED
 
-    if enable_drag and event is InputEventMouseButton and event.button_index == drag_button:
-        _is_dragging = event.is_pressed()
-        
-    if enable_drag and _is_dragging and event is InputEventMouseMotion:
-        var drag_input := Vector2(event.relative.x, event.relative.y)
-        
-        var move_dir := _get_camera_direction(drag_input)
+	if enable_drag and event is InputEventMouseButton and event.button_index == drag_button:
+		_is_dragging = event.is_pressed()
+		
+	if enable_drag and _is_dragging and event is InputEventMouseMotion:
+		var drag_input := Vector2(event.relative.x, event.relative.y)
+		
+		var move_dir := _get_camera_direction(drag_input)
 
-        var new_position: Vector3 = camera_target.global_position + (-move_dir * drag_sensitivity)
-        
-        camera_target.global_position = _apply_limits(new_position)
+		var new_position: Vector3 = camera_target.global_position + (-move_dir * drag_sensitivity)
+		
+		camera_target.global_position = _apply_limits(new_position)
 
-    if event is InputEventMouseButton and event.is_pressed():
-        if event.button_index == MOUSE_BUTTON_WHEEL_UP:
-            _apply_zoom(-zoom_speed)
-        elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
-            _apply_zoom(zoom_speed)
+	if event is InputEventMouseButton and event.is_pressed():
+		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
+			_apply_zoom(-_get_zoom_step())
+		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+			_apply_zoom(_get_zoom_step())
 
 
 func _get_camera_direction(input_dir: Vector2) -> Vector3:
-    var cam_basis := pcam.global_transform.basis
-    
-    var forward := -cam_basis.z
-    forward.y = 0
-    forward = forward.normalized()
-    
-    var right := cam_basis.x
-    right.y = 0
-    right = right.normalized()
+	var cam_basis := pcam.global_transform.basis
+	
+	var forward := -cam_basis.z
+	forward.y = 0
+	forward = forward.normalized()
+	
+	var right := cam_basis.x
+	right.y = 0
+	right = right.normalized()
 
-    return (right * input_dir.x + forward * -input_dir.y)
+	return (right * input_dir.x + forward * -input_dir.y)
 
 func _apply_limits(pos: Vector3) -> Vector3:
-    if enable_limits:
-        pos.x = clamp(pos.x, limit_left, limit_right)
-        pos.z = clamp(pos.z, limit_top, limit_bottom)
-    return pos
-    
+	if enable_limits:
+		pos.x = clamp(pos.x, limit_left, limit_right)
+		pos.z = clamp(pos.z, limit_top, limit_bottom)
+	return pos
+	
 func _apply_zoom(amount: float) -> void:
-    var current_length: float = pcam.spring_length
-    pcam.spring_length = clamp(current_length + amount, min_zoom, max_zoom)
+	var current_length: float = pcam.spring_length
+	pcam.spring_length = clamp(current_length + amount, min_zoom, max_zoom)
+
+func _get_zoom_step() -> float:
+	return (max_zoom - min_zoom) * ZOOM_STEP_RATIO

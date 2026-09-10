@@ -18,7 +18,7 @@ func create_hexagon_mesh(r: float, h: float) -> ArrayMesh:
 	var half_h: float = h / 2.0
 	var angles: Array[float] = []
 	for i: int in range(6):
-		angles.append(deg_to_rad(float(i) * 60.0))
+		angles.append(deg_to_rad(i * 60.0))
 	
 	var top_center: Vector3 = Vector3(0.0, half_h, 0.0)
 	for i: int in range(6):

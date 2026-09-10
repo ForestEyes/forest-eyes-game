@@ -3,6 +3,7 @@
 [ext_resource type="Script" uid="uid://lc12efcpdcn1" path="res://scenes/test_scene/test_scene.gd" id="1_8pyld"]
 [ext_resource type="PackedScene" uid="uid://bodn2ry8sf5r3" path="res://scenes/camera_controller/camera_controller.tscn" id="2_l4ihe"]
 [ext_resource type="PackedScene" uid="uid://c3b0c15tll05m" path="res://scenes/test_scene/test_tilemap.tscn" id="2_mndh0"]
+[ext_resource type="Script" uid="uid://cdqjjwsevevnm" path="res://scenes/hex_cell/world_cells.gd" id="4_wgdak"]
 [ext_resource type="PackedScene" uid="uid://buckfelwgjxyv" path="res://scenes/hex_cell/hex_cell.tscn" id="5_wgdak"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_mndh0"]
@@ -49,6 +50,7 @@ shadow_enabled = true
 environment = SubResource("Environment_l4ihe")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=2006431272]
+visible = false
 mesh = SubResource("PlaneMesh_yeiif")
 
 [node name="SubViewport" type="SubViewport" parent="." unique_id=1942032928]
@@ -57,29 +59,48 @@ size = Vector2i(2000, 2000)
 [node name="TestTilemap" parent="SubViewport" unique_id=1249042114 instance=ExtResource("2_mndh0")]
 position = Vector2(1000, 1000)
 
-[node name="HexCell" parent="." unique_id=1032575564 instance=ExtResource("5_wgdak")]
-transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 0.18295419, 0.25029463, -0.5990679)
+[node name="WorldCells" type="Node3D" parent="." unique_id=1631279543]
+script = ExtResource("4_wgdak")
+height = 21
+width = 31
+water_border_distance = 3
+water_chance = 0.05
+water_neighbor_influence = 0.1
+
+[node name="HexCell" parent="WorldCells" unique_id=1032575564 instance=ExtResource("5_wgdak")]
 current_level = 7
 
-[node name="HexCell2" parent="." unique_id=1034026135 instance=ExtResource("5_wgdak")]
-transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 1.9960072, 0.25029463, -0.59687245)
+[node name="HexCell2" parent="WorldCells" unique_id=446505729 instance=ExtResource("5_wgdak")]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 1.55, 0, 0.891)
+current_level = 7
 
-[node name="HexCell3" parent="." unique_id=379807930 instance=ExtResource("5_wgdak")]
-transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 1.0694046, 0.25029463, 0.96836483)
-current_level = 10
+[node name="HexCell3" parent="WorldCells" unique_id=231115819 instance=ExtResource("5_wgdak")]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 0, 0, 1.782)
+current_level = 7
 
-[node name="HexCell4" parent="." unique_id=2054465202 instance=ExtResource("5_wgdak")]
-transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 2.8840218, 0.25029463, 0.96836483)
-current_level = 5
+[node name="UserInterface" type="CanvasLayer" parent="." unique_id=6170724]
 
-[node name="HexCell5" parent="." unique_id=1486100644 instance=ExtResource("5_wgdak")]
-transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 2.9726133, 0.25029463, -2.1238594)
-current_level = 2
+[node name="Panel" type="PanelContainer" parent="UserInterface" unique_id=1358000210]
+offset_left = 16.0
+offset_top = 16.0
+offset_right = 196.0
+offset_bottom = 104.0
 
-[node name="HexCell7" parent="." unique_id=229677782 instance=ExtResource("5_wgdak")]
-transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 3.7639627, 0.25029463, -0.5731087)
-current_level = 4
+[node name="MarginContainer" type="MarginContainer" parent="UserInterface/Panel" unique_id=1360321401]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 8
 
-[node name="HexCell6" parent="." unique_id=618147898 instance=ExtResource("5_wgdak")]
-transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 1.1042595, 0.25029463, -2.169361)
-current_level = 1
+[node name="VBoxContainer" type="VBoxContainer" parent="UserInterface/Panel/MarginContainer" unique_id=1264176391]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="FPSLabel" type="Label" parent="UserInterface/Panel/MarginContainer/VBoxContainer" unique_id=199061539]
+layout_mode = 2
+text = "FPS: 0"
+
+[node name="RegenerateButton" type="Button" parent="UserInterface/Panel/MarginContainer/VBoxContainer" unique_id=738374345]
+layout_mode = 2
+text = "Regenerate World"

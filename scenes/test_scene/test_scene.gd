@@ -1,11 +1,16 @@
 extends Node3D
 
+@onready var world_cells: WorldCells = $WorldCells
+@onready var fps_label: Label = $UserInterface/Panel/MarginContainer/VBoxContainer/FPSLabel
+@onready var regenerate_button: Button = $UserInterface/Panel/MarginContainer/VBoxContainer/RegenerateButton
 
-# Called when the node enters the scene tree for the first time.
 func _ready() -> void:
-	pass # Replace with function body.
+	regenerate_button.pressed.connect(_on_regenerate_pressed)
 
 
-# Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(_delta: float) -> void:
-	pass
+	fps_label.text = "FPS: %d" % Engine.get_frames_per_second()
+
+
+func _on_regenerate_pressed() -> void:
+	world_cells.generate_world()

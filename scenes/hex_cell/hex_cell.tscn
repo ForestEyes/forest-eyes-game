@@ -1,25 +1,52 @@
-[gd_scene format=4 uid="uid://buckfelwgjxyv"]
+[gd_scene format=3 uid="uid://buckfelwgjxyv"]
 
 [ext_resource type="Script" uid="uid://cmafc5b07kbcl" path="res://scenes/hex_cell/hex_cell.gd" id="1_t7s5s"]
 [ext_resource type="PackedScene" uid="uid://bs7aom5fdjhvn" path="res://scenes/test_scene/Tree_1.tscn" id="2_7os7r"]
-[ext_resource type="Script" uid="uid://dqsqkw3sm7t5b" path="res://scenes/hex_cell/hex_cell_mesh.gd" id="2_8ltkn"]
 [ext_resource type="PackedScene" uid="uid://dp1uexaml3pfa" path="res://scenes/test_scene/Tree_2.tscn" id="3_y2k05"]
 [ext_resource type="PackedScene" uid="uid://cs4cok0lhcwu" path="res://scenes/test_scene/Tree_3.tscn" id="4_uxwae"]
+[ext_resource type="PackedScene" uid="uid://d1fix0donypra" path="res://shaders/shader_tests/hexagon_cylinder.glb" id="5_6vlsw"]
+[ext_resource type="Shader" uid="uid://cicem1q2tu8kb" path="res://shaders/grass_shader.tres" id="6_pta3i"]
+[ext_resource type="Shader" uid="uid://cnjwxyjrbr78d" path="res://shaders/river_shader.tres" id="7_ajsww"]
+[ext_resource type="Shader" uid="uid://chi46a58tnce7" path="res://shaders/water_shader.tres" id="8_pta3i"]
 
-[sub_resource type="ArrayMesh" id="ArrayMesh_y2k05"]
-_surfaces = [{
-"aabb": AABB(-1, -0.25, -0.8660254, 2, 0.5, 1.7320508),
-"format": 34359738375,
-"primitive": 3,
-"uv_scale": Vector4(0, 0, 0, 0),
-"vertex_count": 72,
-"vertex_data": PackedByteArray("AAAAAAAAgD4AAAAAAACAPwAAgD4AAAAAAAAAPwAAgD7Xs10/AAAAAAAAgD4AAAAAAAAAPwAAgD7Xs10/AAAAvwAAgD7Xs10/AAAAAAAAgD4AAAAAAAAAvwAAgD7Xs10/AACAvwAAgD4AMA0lAAAAAAAAgD4AAAAAAACAvwAAgD4AMA0lAAAAvwAAgD7Xs12/AAAAAAAAgD4AAAAAAAAAvwAAgD7Xs12/AAAAPwAAgD7Xs12/AAAAAAAAgD4AAAAAAAAAPwAAgD7Xs12/AACAPwAAgD4AAAAAAAAAAAAAgL4AAAAAAAAAPwAAgL7Xs10/AACAPwAAgL4AAAAAAAAAAAAAgL4AAAAAAAAAvwAAgL7Xs10/AAAAPwAAgL7Xs10/AAAAAAAAgL4AAAAAAACAvwAAgL4AMA0lAAAAvwAAgL7Xs10/AAAAAAAAgL4AAAAAAAAAvwAAgL7Xs12/AACAvwAAgL4AMA0lAAAAAAAAgL4AAAAAAAAAPwAAgL7Xs12/AAAAvwAAgL7Xs12/AAAAAAAAgL4AAAAAAACAPwAAgL4AAAAAAAAAPwAAgL7Xs12/AACAPwAAgL4AAAAAAAAAPwAAgD7Xs10/AACAPwAAgD4AAAAAAACAPwAAgL4AAAAAAAAAPwAAgL7Xs10/AAAAPwAAgD7Xs10/AAAAPwAAgL7Xs10/AAAAvwAAgD7Xs10/AAAAPwAAgD7Xs10/AAAAPwAAgL7Xs10/AAAAvwAAgL7Xs10/AAAAvwAAgD7Xs10/AAAAvwAAgL7Xs10/AACAvwAAgD4AMA0lAAAAvwAAgD7Xs10/AAAAvwAAgL7Xs10/AACAvwAAgL4AMA0lAACAvwAAgD4AMA0lAACAvwAAgL4AMA0lAAAAvwAAgD7Xs12/AACAvwAAgD4AMA0lAACAvwAAgL4AMA0lAAAAvwAAgL7Xs12/AAAAvwAAgD7Xs12/AAAAvwAAgL7Xs12/AAAAPwAAgD7Xs12/AAAAvwAAgD7Xs12/AAAAvwAAgL7Xs12/AAAAPwAAgL7Xs12/AAAAPwAAgD7Xs12/AAAAPwAAgL7Xs12/AACAPwAAgD4AAAAAAAAAPwAAgD7Xs12/AAAAPwAAgL7Xs12/AACAPwAAgL4AAAAAAACAPwAAgD4AAAAA/3///wAA/7/IzcS+MWag16ymqKxOQLW9/3///wAA/7+spqisTkC1vVdrtK/pcC6f/3///wAA/79Xa7Sv6XAun8Q+NrJAahKq/3///wAA/7/EPjayQGoSqqksUdn7O/2d/3///wAA/7+pLFHZ+zv9nUrQVuuKNhKL/3///wAA/79K0FbrijYSi8jNxL4xZqDX/38AAAAA/7+nlEpQiTdxlTrByE3hVt2q/38AAAAA/79SWVZTGyGNkKeUSlCJN3GV/38AAAAA/782MjpBTlqW0VJZVlMbIY2Q/38AAAAA/7+0L6gU+k9mrjYyOkFOWpbR/38AAAAA/79V060mbHsmoLQvqBT6T2au/38AAAAA/786wchN4VbdqlXTrSZseyagOsHITeFW3aqspqisTkC1vcjNxL4xZqDXOsHITeFW3aqnlEpQiTdxlaymqKxOQLW9p5RKUIk3cZVXa7Sv6XAun6ymqKxOQLW9p5RKUIk3cZVSWVZTGyGNkFdrtK/pcC6fUllWUxshjZDEPjayQGoSqldrtK/pcC6fUllWUxshjZA2MjpBTlqW0cQ+NrJAahKqNjI6QU5altGpLFHZ+zv9ncQ+NrJAahKqNjI6QU5altG0L6gU+k9mrqksUdn7O/2dtC+oFPpPZq5K0FbrijYSi6ksUdn7O/2dtC+oFPpPZq5V060mbHsmoErQVuuKNhKLVdOtJmx7JqDIzcS+MWag10rQVuuKNhKLVdOtJmx7JqA6wchN4VbdqsjNxL4xZqDX")
-}]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_6vlsw"]
+render_priority = 0
+shader = ExtResource("8_pta3i")
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_yeiif"]
+render_priority = 0
+shader = ExtResource("6_pta3i")
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_y2k05"]
+render_priority = 0
+shader = ExtResource("7_ajsww")
 
 [node name="HexCell" type="Node3D" unique_id=1032575564]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 0, 0, 0)
 script = ExtResource("1_t7s5s")
 tree_meshes = Array[PackedScene]([ExtResource("2_7os7r"), ExtResource("3_y2k05"), ExtResource("4_uxwae")])
+packed_hex_scene = null
 
-[node name="HexCellMesh" type="MeshInstance3D" parent="." unique_id=640583737]
-mesh = SubResource("ArrayMesh_y2k05")
-script = ExtResource("2_8ltkn")
+[node name="WaterShader" parent="." unique_id=269143159 instance=ExtResource("5_6vlsw")]
+transform = Transform3D(1, 0, 0, 0, 0.25, 0, 0, 0, 1, 0, 0, 0)
+
+[node name="Cylinder" parent="WaterShader" index="0" unique_id=1920975222]
+surface_material_override/0 = SubResource("ShaderMaterial_6vlsw")
+
+[node name="GrassShader" parent="." unique_id=745426853 instance=ExtResource("5_6vlsw")]
+transform = Transform3D(1, 0, 0, 0, 0.25, 0, 0, 0, 1, 0, 0, 0)
+visible = false
+
+[node name="Cylinder" parent="GrassShader" index="0" unique_id=1920975222]
+surface_material_override/0 = SubResource("ShaderMaterial_yeiif")
+
+[node name="RiverShader" parent="." unique_id=305181412 instance=ExtResource("5_6vlsw")]
+transform = Transform3D(1, 0, 0, 0, 0.25, 0, 0, 0, 1, 0, 0, 0)
+visible = false
+
+[node name="Cylinder" parent="RiverShader" index="0" unique_id=1920975222]
+surface_material_override/0 = SubResource("ShaderMaterial_y2k05")
+
+[editable path="WaterShader"]
+[editable path="GrassShader"]
+[editable path="RiverShader"]
