@@ -21,6 +21,10 @@ shader = ExtResource("6_pta3i")
 render_priority = 0
 shader = ExtResource("7_ajsww")
 
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_kgtat"]
+height = 0.51812744
+radius = 1.0
+
 [node name="HexCell" type="Node3D" unique_id=1032575564]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 0, 0, 0)
 script = ExtResource("1_t7s5s")
@@ -29,22 +33,29 @@ tree_meshes = Array[PackedScene]([ExtResource("2_7os7r"), ExtResource("3_y2k05")
 [node name="WaterShader" parent="." unique_id=269143159 instance=ExtResource("5_6vlsw")]
 transform = Transform3D(1, 0, 0, 0, 0.25, 0, 0, 0, 1, 0, 0, 0)
 
-[node name="Cylinder" parent="WaterShader" index="0" unique_id=1920975222]
+[node name="Cylinder" parent="WaterShader" index="0" unique_id=881236307]
 surface_material_override/0 = SubResource("ShaderMaterial_6vlsw")
 
 [node name="GrassShader" parent="." unique_id=745426853 instance=ExtResource("5_6vlsw")]
 transform = Transform3D(1, 0, 0, 0, 0.25, 0, 0, 0, 1, 0, 0, 0)
 visible = false
 
-[node name="Cylinder" parent="GrassShader" index="0" unique_id=1920975222]
+[node name="Cylinder" parent="GrassShader" index="0" unique_id=881236307]
 surface_material_override/0 = SubResource("ShaderMaterial_yeiif")
 
 [node name="RiverShader" parent="." unique_id=305181412 instance=ExtResource("5_6vlsw")]
 transform = Transform3D(1, 0, 0, 0, 0.25, 0, 0, 0, 1, 0, 0, 0)
 visible = false
 
-[node name="Cylinder" parent="RiverShader" index="0" unique_id=1920975222]
+[node name="Cylinder" parent="RiverShader" index="0" unique_id=881236307]
 surface_material_override/0 = SubResource("ShaderMaterial_y2k05")
+
+[node name="Area3D" type="Area3D" parent="." unique_id=248437816]
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Area3D" unique_id=167198818]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.007659912, 0)
+shape = SubResource("CylinderShape3D_kgtat")
 
 [editable path="WaterShader"]
 [editable path="GrassShader"]
