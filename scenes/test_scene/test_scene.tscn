@@ -47,27 +47,15 @@ water_chance = 0.05
 water_neighbor_influence = 0.1
 
 [node name="HexCell" parent="WorldCells" unique_id=1032575564 instance=ExtResource("5_wgdak")]
-cell_type = null
 current_level = 7
-trees_per_level = null
-max_trees_per_cell = null
-tree_visibility_distance = null
 
 [node name="HexCell2" parent="WorldCells" unique_id=446505729 instance=ExtResource("5_wgdak")]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 1.55, 0, 0.891)
-cell_type = null
 current_level = 7
-trees_per_level = null
-max_trees_per_cell = null
-tree_visibility_distance = null
 
 [node name="HexCell3" parent="WorldCells" unique_id=231115819 instance=ExtResource("5_wgdak")]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 0, 0, 1.782)
-cell_type = null
 current_level = 7
-trees_per_level = null
-max_trees_per_cell = null
-tree_visibility_distance = null
 
 [node name="UserInterface" type="CanvasLayer" parent="." unique_id=6170724]
 

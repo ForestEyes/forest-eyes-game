@@ -42,7 +42,6 @@ materials/extract_path=""
 _subresources={
 "nodes": {
 "PATH:Copa 2": {
-"generate/occluder": 2,
 "mesh_instance/cast_shadow": 0
 }
 }
