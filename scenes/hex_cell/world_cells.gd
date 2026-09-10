@@ -29,23 +29,28 @@ signal world_generated(center: Vector3, bounds: AABB)
 @export_range(0.05, 1.0, 0.05) var tree_lod_min_ratio: float = 0.2
 @export_group("Test Culling")
 @export var use_fixed_test_culling: bool = true
-@export_range(0.1, 100.0, 0.1) var fixed_test_culling_distance: float = 10
+@export_range(0.1, 100.0, 0.1) var fixed_test_culling_distance: float = 15
 @export var exact_test_tree_culling: bool = false
 @export var packed_hex_scene: PackedScene = preload("res://scenes/hex_cell/hex_cell.tscn")
 
 var cells: Dictionary[Vector2i, HexCell] = {}
 var is_generated: bool = false
 var generated_tree_count: int = 0
+var life: int = 0
 var _culling_time: float = 0.0
 var _generated_tree_root: Node3D
+var _tree_growth_root: Node3D
 var _generated_tree_chunks: Dictionary[Vector2i, Node3D] = {}
 var _tree_generation_seed: int = 0
+var _active_tree_growth_tweens: int = 0
+var _pending_tree_animations: Dictionary = {}
 
 
 const HEX_RADIUS: float = 1.0
 const HEX_HORIZONTAL_SPACING: float = HEX_RADIUS * 1.5 + 0.05
 const HEX_VERTICAL_SPACING: float = HEX_RADIUS * sqrt(3.0) + 0.025
 const CENTRAL_FOREST_RADIUS_RATIO: float = 0.2
+const TREE_MIN_DISTANCE: float = 0.150
 
 
 const EVEN_COLUMN_NEIGHBOR_OFFSETS: Dictionary[StringName, Vector2i] = {
@@ -90,6 +95,7 @@ func _process(delta: float) -> void:
 func generate_world() -> void:
 	is_generated = false
 	generated_tree_count = 0
+	life = 0
 	_clear_cells()
 	cells.clear()
 
@@ -131,18 +137,34 @@ func generate_world() -> void:
 	world_generated.emit(bounds.get_center(), bounds)
 
 
-func rebuild_tree_batches() -> void:
+func add_life(amount: int) -> void:
+	life += amount
+
+
+func spend_life(amount: int) -> bool:
+	if life < amount:
+		return false
+
+	life -= amount
+	return true
+
+
+func rebuild_tree_batches(animated_cell: HexCell = null, animated_from_count: int = -1) -> void:
+	if animated_cell != null and animated_from_count >= 0:
+		if not _pending_tree_animations.has(animated_cell):
+			_pending_tree_animations[animated_cell] = animated_from_count
+
 	generated_tree_count = 0
 	for cell: HexCell in cells.values():
 		if cell.cell_type == "forest":
 			generated_tree_count += cell.get_tree_count()
 
-	_generate_world_trees()
+	_generate_world_trees(animated_cell, animated_from_count)
 	if enable_distance_culling:
 		_update_cell_visibility()
 
 
-func _generate_world_trees() -> void:
+func _generate_world_trees(animated_cell: HexCell = null, animated_from_count: int = -1) -> void:
 	_clear_generated_trees()
 	if generated_tree_count == 0:
 		return
@@ -169,6 +191,8 @@ func _generate_world_trees() -> void:
 		return
 
 	var transforms_by_chunk: Dictionary[Vector2i, Array] = {}
+	var generated_tree_positions: Dictionary = {}
+	var animated_tree_data: Array[Dictionary] = []
 	for coordinate: Vector2i in cells:
 		if cells[coordinate].cell_type != "forest":
 			continue
@@ -190,18 +214,61 @@ func _generate_world_trees() -> void:
 
 		var spawn_count: int = cell.get_tree_count()
 		for _tree_index in range(spawn_count):
-			var spawn_position: Vector2 = _get_random_point_in_hex(cell_rng)
-			var variant_index: int = cell_rng.rand_weighted([0.7, 0.2, 0.1])
-			var tree_scale: float = 1.0 + cell_rng.randf_range(0.0, variant_index)
+			var spawn_position: Vector2
+			var has_valid_position := false
+			for _attempt in range(250):
+				var candidate_position: Vector2 = _get_random_point_in_hex(cell_rng)
+				var world_position := Vector2(
+					cell.position.x + candidate_position.x,
+					cell.position.z + candidate_position.y
+				)
+				var position_bucket := Vector2i(
+					floori(world_position.x / TREE_MIN_DISTANCE),
+					floori(world_position.y / TREE_MIN_DISTANCE)
+				)
+				var is_too_close := false
+				for bucket_x in range(-1, 2):
+					for bucket_y in range(-1, 2):
+						var nearby_bucket := position_bucket + Vector2i(bucket_x, bucket_y)
+						if not generated_tree_positions.has(nearby_bucket):
+							continue
+						for generated_position: Vector2 in generated_tree_positions[nearby_bucket]:
+							if world_position.distance_squared_to(generated_position) < TREE_MIN_DISTANCE * TREE_MIN_DISTANCE:
+								is_too_close = true
+								break
+						if is_too_close:
+							break
+				if is_too_close:
+					continue
+				spawn_position = candidate_position
+				var bucket_positions: Array = generated_tree_positions.get(position_bucket, [])
+				bucket_positions.append(world_position)
+				generated_tree_positions[position_bucket] = bucket_positions
+				has_valid_position = true
+				break
+			if not has_valid_position:
+				continue
+
+			var variant_index: int = cell_rng.rand_weighted([0.745, 0.245, 0.01])
+			var tree_scale: float = 1 + cell_rng.randf_range(1, variant_index * 1.5)
 			var tree_transform := Transform3D(
 				Basis(Vector3.UP, cell_rng.randf_range(0.0, TAU)).scaled(Vector3.ONE * tree_scale),
 				cell.position + Vector3(spawn_position.x, 0.05, spawn_position.y)
 			)
 
+			var pending_from_count: int = _pending_tree_animations.get(cell, -1)
+			var is_pending_tree := pending_from_count >= 0 and _tree_index >= pending_from_count
+			var animate_tree := cell == animated_cell and is_pending_tree
+			if animate_tree:
+				animated_tree_data.append({
+					"tree_transform": tree_transform,
+					"tree_scene": cell.tree_meshes[variant_index]
+				})
 			for mesh_index: int in range(tree_mesh_data.size()):
 				if tree_mesh_data[mesh_index]["tree_index"] == variant_index:
 					var base_transform: Transform3D = tree_mesh_data[mesh_index]["transform"]
-					transforms_by_mesh[mesh_index].append(tree_transform * base_transform)
+					if not is_pending_tree:
+						transforms_by_mesh[mesh_index].append(tree_transform * base_transform)
 	_generated_tree_root = Node3D.new()
 	_generated_tree_root.name = "GeneratedTrees"
 	add_child(_generated_tree_root)
@@ -231,6 +298,43 @@ func _generate_world_trees() -> void:
 			var multimesh_instance := MultiMeshInstance3D.new()
 			multimesh_instance.multimesh = multimesh
 			chunk_root.add_child(multimesh_instance)
+
+	_animate_new_trees(animated_tree_data)
+
+
+func _animate_new_trees(tree_data: Array[Dictionary]) -> void:
+	if tree_data.is_empty():
+		return
+
+	if _tree_growth_root == null:
+		_tree_growth_root = Node3D.new()
+		_tree_growth_root.name = "GrowingTrees"
+		add_child(_tree_growth_root)
+
+	_active_tree_growth_tweens += tree_data.size()
+	for data: Dictionary in tree_data:
+		var tree_root: Node3D = data["tree_scene"].instantiate() as Node3D
+		if tree_root == null:
+			_active_tree_growth_tweens -= 1
+			continue
+
+		tree_root.transform = data["tree_transform"]
+		var final_scale := tree_root.scale
+		tree_root.scale = Vector3.ZERO
+		_tree_growth_root.add_child(tree_root)
+
+		var tween := create_tween()
+		tween.set_trans(Tween.TRANS_QUAD)
+		tween.set_ease(Tween.EASE_OUT)
+		tween.tween_property(tree_root, "scale", final_scale, 0.6)
+		tween.finished.connect(_on_tree_growth_tween_finished)
+
+func _on_tree_growth_tween_finished() -> void:
+	_active_tree_growth_tweens -= 1
+	if _active_tree_growth_tweens == 0:
+		_pending_tree_animations.clear()
+		_clear_tree_growth()
+		rebuild_tree_batches()
 
 
 func _get_cell_tree_seed(coordinate: Vector2i) -> int:
@@ -492,6 +596,7 @@ func _get_neighbor_offsets(column: int) -> Dictionary[StringName, Vector2i]:
 
 func _clear_cells() -> void:
 	_clear_generated_trees()
+	_clear_tree_growth()
 	for child: Node in get_children():
 		if child is HexCell:
 			child.free()
@@ -502,3 +607,10 @@ func _clear_generated_trees() -> void:
 		_generated_tree_root.free()
 	_generated_tree_root = null
 	_generated_tree_chunks.clear()
+
+
+func _clear_tree_growth() -> void:
+	if is_instance_valid(_tree_growth_root):
+		_tree_growth_root.free()
+	_tree_growth_root = null
+	_active_tree_growth_tweens = 0

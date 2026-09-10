@@ -30,7 +30,7 @@ min_zoom = 5.0
 max_zoom = 25.0
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=2009360600]
-transform = Transform3D(-0.99145806, -0.11639968, -0.058839496, 0.029985063, -0.64247215, 0.765722, -0.12693259, 0.7574173, 0.6404746, 0.19385332, 1.5262556, 0.13937199)
+transform = Transform3D(-0.48328245, -0.87426466, -0.045818258, 0, -0.05233594, 0.9986295, -0.8754645, 0.48262012, 0.025293041, 0.19385332, 2.7476301, 2.002348)
 shadow_enabled = true
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1374679162]
@@ -79,6 +79,10 @@ theme_override_constants/separation = 6
 [node name="FPSLabel" type="Label" parent="UserInterface/Panel/MarginContainer/VBoxContainer" unique_id=199061539]
 layout_mode = 2
 text = "FPS: 0"
+
+[node name="LifeLabel" type="Label" parent="UserInterface/Panel/MarginContainer/VBoxContainer" unique_id=1508956175]
+layout_mode = 2
+text = "Vida: 0"
 
 [node name="TreeCountLabel" type="Label" parent="UserInterface/Panel/MarginContainer/VBoxContainer" unique_id=1438673404]
 layout_mode = 2

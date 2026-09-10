@@ -2,6 +2,7 @@ extends Node3D
 
 @onready var world_cells: WorldCells = $WorldCells
 @onready var fps_label: Label = $UserInterface/Panel/MarginContainer/VBoxContainer/FPSLabel
+@onready var life_label: Label = $UserInterface/Panel/MarginContainer/VBoxContainer/LifeLabel
 @onready var tree_count_label: Label = $UserInterface/Panel/MarginContainer/VBoxContainer/TreeCountLabel
 @onready var regenerate_button: Button = $UserInterface/Panel/MarginContainer/VBoxContainer/RegenerateButton
 @onready var level_slider: HSlider = $UserInterface/Panel/MarginContainer/VBoxContainer/LevelSlider
@@ -21,6 +22,7 @@ func _ready() -> void:
 
 func _process(_delta: float) -> void:
 	fps_label.text = "FPS: %d" % Engine.get_frames_per_second()
+	life_label.text = "Vida: %d" % world_cells.life
 	tree_count_label.text = "Trees: %d" % world_cells.generated_tree_count
 
 

@@ -4,5 +4,5 @@
 
 [node name="Tree2" type="Node3D" unique_id=155347369]
 
-[node name="Árvore 2" parent="." unique_id=1937131145 instance=ExtResource("1_320ya")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.40567017, 0, 0)
+[node name="Árvore 2" parent="." unique_id=891631397 instance=ExtResource("1_320ya")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.40197754, -0.038085938, 0)
