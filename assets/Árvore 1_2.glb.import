@@ -3,13 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://dyvt8papf5nn6"
-path="res://.godot/imported/Árvore 2.glb-a003493086dc46cce33c7a7074b86ba8.scn"
+uid="uid://80ojeqxpp6lm"
+path="res://.godot/imported/Árvore 1_2.glb-2ba64e59013d09c8ef38dcd51502ab96.scn"
 
 [deps]
 
-source_file="res://assets/Árvore 2.glb"
-dest_files=["res://.godot/imported/Árvore 2.glb-a003493086dc46cce33c7a7074b86ba8.scn"]
+source_file="res://assets/Árvore 1_2.glb"
+dest_files=["res://.godot/imported/Árvore 1_2.glb-2ba64e59013d09c8ef38dcd51502ab96.scn"]
 
 [params]
 
@@ -41,8 +41,7 @@ materials/extract_format=0
 materials/extract_path=""
 _subresources={
 "nodes": {
-"PATH:Copa 2": {
-"generate/occluder": 2,
+"PATH:Tronco": {
 "mesh_instance/cast_shadow": 0
 }
 }

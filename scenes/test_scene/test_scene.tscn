@@ -2,7 +2,6 @@
 
 [ext_resource type="Script" uid="uid://lc12efcpdcn1" path="res://scenes/test_scene/test_scene.gd" id="1_8pyld"]
 [ext_resource type="PackedScene" uid="uid://bodn2ry8sf5r3" path="res://scenes/camera_controller/camera_controller.tscn" id="2_l4ihe"]
-[ext_resource type="PackedScene" uid="uid://c3b0c15tll05m" path="res://scenes/test_scene/test_tilemap.tscn" id="2_mndh0"]
 [ext_resource type="Script" uid="uid://cdqjjwsevevnm" path="res://scenes/hex_cell/world_cells.gd" id="4_wgdak"]
 [ext_resource type="PackedScene" uid="uid://buckfelwgjxyv" path="res://scenes/hex_cell/hex_cell.tscn" id="5_wgdak"]
 
@@ -16,18 +15,6 @@ sky_material = SubResource("ProceduralSkyMaterial_mndh0")
 [sub_resource type="Environment" id="Environment_l4ihe"]
 background_mode = 2
 sky = SubResource("Sky_1x7oe")
-
-[sub_resource type="ViewportTexture" id="ViewportTexture_yeiif"]
-viewport_path = NodePath("SubViewport")
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_8pyld"]
-resource_local_to_scene = true
-albedo_texture = SubResource("ViewportTexture_yeiif")
-
-[sub_resource type="PlaneMesh" id="PlaneMesh_yeiif"]
-resource_local_to_scene = true
-material = SubResource("StandardMaterial3D_8pyld")
-size = Vector2(64, 64)
 
 [node name="TestScene" type="Node3D" unique_id=1411787965]
 script = ExtResource("1_8pyld")
@@ -49,21 +36,12 @@ shadow_enabled = true
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1374679162]
 environment = SubResource("Environment_l4ihe")
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=2006431272]
-visible = false
-mesh = SubResource("PlaneMesh_yeiif")
-
-[node name="SubViewport" type="SubViewport" parent="." unique_id=1942032928]
-size = Vector2i(2000, 2000)
-
-[node name="TestTilemap" parent="SubViewport" unique_id=1249042114 instance=ExtResource("2_mndh0")]
-position = Vector2(1000, 1000)
-
 [node name="WorldCells" type="Node3D" parent="." unique_id=1631279543]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.25, 0)
 script = ExtResource("4_wgdak")
-height = 21
-width = 31
-water_border_distance = 3
+height = 10
+width = 10
+water_border_distance = 1
 water_chance = 0.05
 water_neighbor_influence = 0.1
 
@@ -83,8 +61,8 @@ current_level = 7
 [node name="Panel" type="PanelContainer" parent="UserInterface" unique_id=1358000210]
 offset_left = 16.0
 offset_top = 16.0
-offset_right = 196.0
-offset_bottom = 104.0
+offset_right = 296.0
+offset_bottom = 330.0
 
 [node name="MarginContainer" type="MarginContainer" parent="UserInterface/Panel" unique_id=1360321401]
 layout_mode = 2
@@ -100,6 +78,40 @@ theme_override_constants/separation = 6
 [node name="FPSLabel" type="Label" parent="UserInterface/Panel/MarginContainer/VBoxContainer" unique_id=199061539]
 layout_mode = 2
 text = "FPS: 0"
+
+[node name="TreeCountLabel" type="Label" parent="UserInterface/Panel/MarginContainer/VBoxContainer" unique_id=1438673404]
+layout_mode = 2
+text = "Trees: 0"
+
+[node name="LevelValueLabel" type="Label" parent="UserInterface/Panel/MarginContainer/VBoxContainer" unique_id=168705214]
+layout_mode = 2
+text = "Cell level: 5"
+
+[node name="LevelSlider" type="HSlider" parent="UserInterface/Panel/MarginContainer/VBoxContainer" unique_id=72909851]
+custom_minimum_size = Vector2(240, 20)
+layout_mode = 2
+max_value = 15.0
+value = 5.0
+
+[node name="WidthValueLabel" type="Label" parent="UserInterface/Panel/MarginContainer/VBoxContainer" unique_id=317635927]
+layout_mode = 2
+text = "Width: 50"
+
+[node name="WidthSlider" type="HSlider" parent="UserInterface/Panel/MarginContainer/VBoxContainer" unique_id=268774940]
+custom_minimum_size = Vector2(240, 20)
+layout_mode = 2
+min_value = 1.0
+value = 50.0
+
+[node name="HeightValueLabel" type="Label" parent="UserInterface/Panel/MarginContainer/VBoxContainer" unique_id=1132468169]
+layout_mode = 2
+text = "Height: 50"
+
+[node name="HeightSlider" type="HSlider" parent="UserInterface/Panel/MarginContainer/VBoxContainer" unique_id=494339860]
+custom_minimum_size = Vector2(240, 20)
+layout_mode = 2
+min_value = 1.0
+value = 50.0
 
 [node name="RegenerateButton" type="Button" parent="UserInterface/Panel/MarginContainer/VBoxContainer" unique_id=738374345]
 layout_mode = 2

@@ -13,7 +13,6 @@ script = ExtResource("1_wqtiv")
 pan_speed = 4.0
 edge_margin = 5.0
 drag_sensitivity = 0.005
-zoom_speed = 0.25
 min_zoom = 1.0
 max_zoom = 5.0
 

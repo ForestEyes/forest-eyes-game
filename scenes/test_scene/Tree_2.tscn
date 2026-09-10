@@ -1,8 +1,7 @@
 [gd_scene format=3 uid="uid://dp1uexaml3pfa"]
 
-[ext_resource type="PackedScene" uid="uid://bkv2lw7orpds0" path="res://assets/Árvore 1.glb" id="1_320ya"]
+[ext_resource type="PackedScene" uid="uid://d2poxgaqt4dmn" path="res://assets/Árvore 2_2.glb" id="1_sm6hq"]
 
 [node name="Tree2" type="Node3D" unique_id=155347369]
 
-[node name="Árvore 2" parent="." unique_id=79512629 instance=ExtResource("1_320ya")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.0419625, 0)
+[node name="Árvore 2_2" parent="." unique_id=1985633275 instance=ExtResource("1_sm6hq")]

@@ -3,13 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://dyvt8papf5nn6"
-path="res://.godot/imported/Árvore 2.glb-a003493086dc46cce33c7a7074b86ba8.scn"
+uid="uid://d2poxgaqt4dmn"
+path="res://.godot/imported/Árvore 2_2.glb-ca3c0937fc957ed96c7d7748329a01cc.scn"
 
 [deps]
 
-source_file="res://assets/Árvore 2.glb"
-dest_files=["res://.godot/imported/Árvore 2.glb-a003493086dc46cce33c7a7074b86ba8.scn"]
+source_file="res://assets/Árvore 2_2.glb"
+dest_files=["res://.godot/imported/Árvore 2_2.glb-ca3c0937fc957ed96c7d7748329a01cc.scn"]
 
 [params]
 
@@ -30,7 +30,7 @@ meshes/light_baking=1
 meshes/lightmap_texel_size=0.2
 meshes/force_disable_compression=false
 skins/use_named_skins=true
-animation/import=true
+animation/import=false
 animation/fps=30
 animation/trimming=false
 animation/remove_immutable_tracks=true
@@ -42,7 +42,6 @@ materials/extract_path=""
 _subresources={
 "nodes": {
 "PATH:Copa 2": {
-"generate/occluder": 2,
 "mesh_instance/cast_shadow": 0
 }
 }
