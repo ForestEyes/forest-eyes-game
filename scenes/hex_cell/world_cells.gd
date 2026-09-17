@@ -3,11 +3,17 @@ extends Node3D
 
 signal world_generated(center: Vector3, bounds: AABB)
 
+const LEVEL_PROGRESS_VIEWPORT_SCENE: PackedScene = preload("res://scenes/hex_cell/level_progress_viewport.tscn")
+const LEVEL_PROGRESS_VIEWPORT_POOL_SIZE: int = 10
+
 @export_range(1, 1000, 1) var height: int = 40
 @export_range(1, 1000, 1) var width: int = 80
 @export_range(0, 100, 1) var cell_level: int = 50
 @export_range(0, 1000000, 1) var random_seed: int = 0
 @export_range(0, 100, 1) var water_border_distance: int = 10
+@export_group("Coastline")
+@export_range(0, 20, 1) var coastline_bay_depth: int = 4
+@export_range(0.05, 1.0, 0.05) var coastline_bay_frequency: float = 0.5
 @export_group("Terrain Generation Chances")
 @export var forest_chance: float = 0.7
 @export var river_chance: float = 0.2
@@ -37,6 +43,8 @@ var cells: Dictionary[Vector2i, HexCell] = {}
 var is_generated: bool = false
 var generated_tree_count: int = 0
 var life: int = 0
+var water: int = 0
+var science: int = 0
 var _culling_time: float = 0.0
 var _generated_tree_root: Node3D
 var _tree_growth_root: Node3D
@@ -44,6 +52,8 @@ var _generated_tree_chunks: Dictionary[Vector2i, Node3D] = {}
 var _tree_generation_seed: int = 0
 var _active_tree_growth_tweens: int = 0
 var _pending_tree_animations: Dictionary = {}
+var _available_level_progress_viewports: Array[SubViewport] = []
+var _level_progress_assignments: Dictionary = {}
 
 
 const HEX_RADIUS: float = 1.0
@@ -51,6 +61,7 @@ const HEX_HORIZONTAL_SPACING: float = HEX_RADIUS * 1.5 + 0.05
 const HEX_VERTICAL_SPACING: float = HEX_RADIUS * sqrt(3.0) + 0.025
 const CENTRAL_FOREST_RADIUS_RATIO: float = 0.2
 const TREE_MIN_DISTANCE: float = 0.150
+const TREE_SCALE_MULTIPLIER: float = 1.5
 
 
 const EVEN_COLUMN_NEIGHBOR_OFFSETS: Dictionary[StringName, Vector2i] = {
@@ -73,7 +84,52 @@ const ODD_COLUMN_NEIGHBOR_OFFSETS: Dictionary[StringName, Vector2i] = {
 
 
 func _ready() -> void:
+	_initialize_level_progress_viewport_pool()
 	generate_world()
+
+
+func _initialize_level_progress_viewport_pool() -> void:
+	for _index in range(LEVEL_PROGRESS_VIEWPORT_POOL_SIZE):
+		var viewport := LEVEL_PROGRESS_VIEWPORT_SCENE.instantiate() as SubViewport
+		if viewport == null:
+			push_error("The level progress viewport scene must have a SubViewport root node.")
+			continue
+		add_child(viewport)
+		_available_level_progress_viewports.append(viewport)
+
+
+func acquire_level_progress_viewport(cell: HexCell) -> Dictionary:
+	if _level_progress_assignments.has(cell):
+		return _level_progress_assignments[cell]
+	if _available_level_progress_viewports.is_empty():
+		return {}
+
+	var viewport: SubViewport = _available_level_progress_viewports.pop_back()
+	var progress := viewport.get_node("Control/LevelProgress") as ProgressBar
+	progress.max_value = 100.0
+	progress.value = 0.0
+	viewport.render_target_update_mode = SubViewport.UPDATE_WHEN_VISIBLE
+
+	var assignment := {"viewport": viewport, "progress": progress}
+	_level_progress_assignments[cell] = assignment
+	return assignment
+
+
+func release_level_progress_viewport(cell: HexCell) -> void:
+	if not _level_progress_assignments.has(cell):
+		return
+
+	var assignment: Dictionary = _level_progress_assignments[cell]
+	_level_progress_assignments.erase(cell)
+	var viewport: SubViewport = assignment["viewport"]
+	var progress: ProgressBar = assignment["progress"]
+	progress.value = 0.0
+	viewport.render_target_update_mode = SubViewport.UPDATE_DISABLED
+	_available_level_progress_viewports.append(viewport)
+
+
+func update_level_progress_viewport(viewport: SubViewport) -> void:
+	viewport.render_target_update_mode = SubViewport.UPDATE_WHEN_VISIBLE
 
 
 func _process(delta: float) -> void:
@@ -96,6 +152,8 @@ func generate_world() -> void:
 	is_generated = false
 	generated_tree_count = 0
 	life = 0
+	water = 0
+	science = 0
 	_clear_cells()
 	cells.clear()
 
@@ -121,14 +179,16 @@ func generate_world() -> void:
 			var coordinate := Vector2i(column, row)
 			cell.name = "HexCell_%d_%d" % [column, row]
 			cell.current_level = cell_level
-			cell.cell_type = _get_cell_type(coordinate, rng)
+			cell.cell_type = "water"
 			cell.position = _get_cell_position(coordinate)
 			add_child(cell)
 			cells[coordinate] = cell
-			if cell.cell_type == "forest":
-				generated_tree_count += mini(cell.max_trees_per_cell, maxi(0, int(cell_level * cell.trees_per_level)))
 
 	_assign_neighbors()
+	_generate_island_terrain(rng)
+	for cell: HexCell in cells.values():
+		if cell.cell_type == "forest":
+			generated_tree_count += cell.get_tree_count()
 	_generate_world_trees()
 	is_generated = true
 	_culling_time = culling_update_interval
@@ -139,6 +199,14 @@ func generate_world() -> void:
 
 func add_life(amount: int) -> void:
 	life += amount
+
+
+func add_water(amount: int) -> void:
+	water += maxi(0, amount)
+
+
+func add_science(amount: int) -> void:
+	science += maxi(0, amount)
 
 
 func spend_life(amount: int) -> bool:
@@ -249,8 +317,9 @@ func _generate_world_trees(animated_cell: HexCell = null, animated_from_count: i
 			if not has_valid_position:
 				continue
 
-			var variant_index: int = cell_rng.rand_weighted([0.745, 0.245, 0.01])
-			var tree_scale: float = 1 + cell_rng.randf_range(1, variant_index * 1.5)
+			var variant_index: int = cell_rng.rand_weighted([0.725, 0.225, 0.05])
+			var tree_scale: float = 1 + cell_rng.randf_range(1, 1.15)
+			tree_scale *= TREE_SCALE_MULTIPLIER
 			var tree_transform := Transform3D(
 				Basis(Vector3.UP, cell_rng.randf_range(0.0, TAU)).scaled(Vector3.ONE * tree_scale),
 				cell.position + Vector3(spawn_position.x, 0.05, spawn_position.y)
@@ -499,48 +568,224 @@ func _set_visual_descendants_visible(node: Node, is_visible: bool) -> void:
 		_set_visual_descendants_visible(child, is_visible)
 
 
-func _get_cell_type(coordinate: Vector2i, rng: RandomNumberGenerator) -> String:
+func _generate_island_terrain(rng: RandomNumberGenerator) -> void:
+	for coordinate: Vector2i in cells:
+		var cell: HexCell = cells[coordinate]
+		cell.cell_type = "water" if _is_water_border(coordinate) else "forest"
+		cell.populate_cell()
+
+	var river_count: int = maxi(1, roundi(float(width * height) / 350.0))
+	var river_sources: Array[Vector2i] = []
+	for river_index in range(river_count):
+		var source := _get_river_source(rng, river_sources)
+		river_sources.append(source)
+		_generate_river_path(source, river_index % 4, rng)
+
+	_convert_overwhelmed_rivers_to_water()
+
+	for cell: HexCell in cells.values():
+		cell.populate_cell()
+
+
+func _generate_river_path(start: Vector2i, target_side: int, rng: RandomNumberGenerator) -> void:
+	var current := start
+	var previous_direction := Vector2i.ZERO
+	var visited: Dictionary[Vector2i, bool] = {}
+	var max_steps: int = maxi(1, width + height)
+
+	for _step in range(max_steps):
+		if _is_water_border(current):
+			return
+
+		var cell: HexCell = cells.get(current) as HexCell
+		if cell == null:
+			return
+		cell.cell_type = "river"
+		visited[current] = true
+		if _get_distance_to_target_side(current, target_side) <= water_border_distance + 1:
+			return
+
+		var next_coordinate := _get_next_river_coordinate(
+			current,
+			target_side,
+			previous_direction,
+			visited,
+			rng
+		)
+		if next_coordinate == current:
+			return
+		previous_direction = next_coordinate - current
+		current = next_coordinate
+
+
+func _get_river_source(rng: RandomNumberGenerator, existing_sources: Array[Vector2i]) -> Vector2i:
+	var center := Vector2((width - 1) * 0.5, (height - 1) * 0.5)
+	var source_radius := Vector2(
+		maxf(1.0, (width - water_border_distance * 2) * 0.2),
+		maxf(1.0, (height - water_border_distance * 2) * 0.2)
+	)
+	var minimum_spacing := maxf(2.0, mini(width, height) * 0.12)
+	var best_source := Vector2i(roundi(center.x), roundi(center.y))
+	var best_score := -INF
+
+	for _attempt in range(40):
+		var candidate := Vector2i(
+			clampi(roundi(center.x + rng.randf_range(-source_radius.x, source_radius.x)), 0, width - 1),
+			clampi(roundi(center.y + rng.randf_range(-source_radius.y, source_radius.y)), 0, height - 1)
+		)
+		if _is_water_border(candidate):
+			continue
+		if (cells[candidate] as HexCell).cell_type != "forest":
+			continue
+
+		var spacing_score := INF
+		for existing_source: Vector2i in existing_sources:
+			spacing_score = minf(spacing_score, Vector2(candidate).distance_to(Vector2(existing_source)))
+		if existing_sources.is_empty():
+			spacing_score = source_radius.length()
+		if spacing_score < minimum_spacing and best_score >= minimum_spacing:
+			continue
+		if spacing_score > best_score:
+			best_score = spacing_score
+			best_source = candidate
+
+	return best_source
+
+
+func _get_next_river_coordinate(
+	coordinate: Vector2i,
+	target_side: int,
+	previous_direction: Vector2i,
+	visited: Dictionary[Vector2i, bool],
+	rng: RandomNumberGenerator
+) -> Vector2i:
+	var best_coordinate := coordinate
+	var best_score := INF
+	var neighbor_offsets: Dictionary[StringName, Vector2i] = _get_neighbor_offsets(coordinate.x)
+	for neighbor_offset: Vector2i in neighbor_offsets.values():
+		var candidate := coordinate + neighbor_offset
+		if not cells.has(candidate) or _is_water_border(candidate) or visited.has(candidate):
+			continue
+
+		var distance_to_edge: float
+		match target_side:
+			0:
+				distance_to_edge = candidate.x
+			1:
+				distance_to_edge = width - 1 - candidate.x
+			2:
+				distance_to_edge = candidate.y
+			_:
+				distance_to_edge = height - 1 - candidate.y
+
+		var score: float = distance_to_edge * 0.65 + rng.randf_range(0.0, 1.2)
+		if previous_direction != Vector2i.ZERO:
+			var direction := Vector2(candidate - coordinate).normalized()
+			var last_direction := Vector2(previous_direction).normalized()
+			var direction_change := 1.0 - direction.dot(last_direction)
+			score += direction_change * 0.1
+		if (cells[candidate] as HexCell).cell_type == "river":
+			score += 3.0
+		if score < best_score:
+			best_score = score
+			best_coordinate = candidate
+
+	return best_coordinate
+
+
+func _get_distance_to_target_side(coordinate: Vector2i, target_side: int) -> int:
+	match target_side:
+		0:
+			return coordinate.x
+		1:
+			return width - 1 - coordinate.x
+		2:
+			return coordinate.y
+		_:
+			return height - 1 - coordinate.y
+
+
+func _is_water_border(coordinate: Vector2i) -> bool:
 	var distance_from_border: int = mini(
 		mini(coordinate.x, width - 1 - coordinate.x),
 		mini(coordinate.y, height - 1 - coordinate.y)
 	)
 	if distance_from_border <= water_border_distance:
-		return "water"
+		return true
 
-	var map_center := Vector2((width - 1) * 0.5, (height - 1) * 0.5)
-	var central_radius: float = maxf(1.0, mini(width, height) * CENTRAL_FOREST_RADIUS_RATIO)
-	if Vector2(coordinate).distance_to(map_center) <= central_radius:
-		return "forest"
+	var side_distances: Array[int] = [
+		coordinate.x,
+		width - 1 - coordinate.x,
+		coordinate.y,
+		height - 1 - coordinate.y
+	]
+	for side: int in range(side_distances.size()):
+		var bay_depth := _get_coastline_bay_depth(_get_coastline_coordinate(coordinate, side), side)
+		if side_distances[side] <= water_border_distance + bay_depth:
+			return true
 
-	var river_neighbors: int = 0
-	var water_neighbors: int = 0
-	var neighbor_offsets: Dictionary[StringName, Vector2i] = _get_neighbor_offsets(coordinate.x)
-	for neighbor_offset: Vector2i in neighbor_offsets.values():
-		var neighbor: HexCell = cells.get(coordinate + neighbor_offset) as HexCell
-		if neighbor == null:
-			continue
-		if neighbor.cell_type == "river":
-			river_neighbors += 1
-		elif neighbor.cell_type == "water":
-			water_neighbors += 1
+	return false
 
-	var forest_weight: float = maxf(
-		0.0,
-		forest_chance - river_neighbors * river_neighbor_influence - water_neighbors * water_neighbor_influence
-	)
-	var river_weight: float = 0.0
-	var favorable_river_neighbors: int = 0
-	for neighbor_offset: Vector2i in neighbor_offsets.values():
-		var neighbor: HexCell = cells.get(coordinate + neighbor_offset) as HexCell
-		if neighbor != null and (neighbor.cell_type == "forest" or neighbor.cell_type == "river"):
-			favorable_river_neighbors += 1
 
-	if favorable_river_neighbors > water_neighbors:
-		river_weight = river_chance + river_neighbors * river_neighbor_influence
+func _get_coastline_coordinate(coordinate: Vector2i, side: int) -> int:
+	if side < 2:
+		return coordinate.y
+	return coordinate.x
 
-	var water_weight: float = water_chance + water_neighbors * water_neighbor_influence
-	var selected_type: int = rng.rand_weighted([forest_weight, river_weight, water_weight])
-	return ["forest", "river", "water"][selected_type]
+
+func _get_coastline_bay_depth(along: int, side: int) -> int:
+	if coastline_bay_depth == 0:
+		return 0
+
+	var seed_offset := float((_tree_generation_seed % 1000) + side * 173)
+	var wave_position := float(along) * coastline_bay_frequency + seed_offset * 0.01
+	var wave := (sin(wave_position) + sin(wave_position * 0.47 + 1.8)) * 0.5
+	if wave <= 0.25:
+		return 0
+
+	var normalized_depth := clampf((wave - 0.25) / 0.75, 0.0, 1.0)
+	var depth_variation := _get_coastline_depth_variation(along, side)
+	var varied_bay_depth: int = maxi(0, coastline_bay_depth + depth_variation)
+	return roundi(normalized_depth * varied_bay_depth)
+
+
+func _get_coastline_depth_variation(along: int, side: int) -> int:
+	var segment := floori(float(along) / 4.0)
+	var random_value := sin(
+		segment * 12.9898 + float(side) * 78.233 + float(_tree_generation_seed % 10000) * 0.017
+	) * 43758.5453
+	var normalized_value := random_value - floorf(random_value)
+	return roundi(normalized_value * 4.0 - 2.0)
+
+
+func _convert_overwhelmed_rivers_to_water() -> void:
+	var has_converted_cells := true
+	while has_converted_cells:
+		has_converted_cells = false
+		var cells_to_convert: Array[HexCell] = []
+		for coordinate: Vector2i in cells:
+			var cell: HexCell = cells[coordinate]
+			if cell.cell_type != "river":
+				continue
+
+			var river_neighbors := 0
+			var water_neighbors := 0
+			var neighbor_offsets: Dictionary[StringName, Vector2i] = _get_neighbor_offsets(coordinate.x)
+			for neighbor_offset: Vector2i in neighbor_offsets.values():
+				var neighboring_cell: HexCell = cells.get(coordinate + neighbor_offset) as HexCell
+				if neighboring_cell == null:
+					continue
+				if neighboring_cell.cell_type == "river":
+					river_neighbors += 1
+				elif neighboring_cell.cell_type == "water":
+					water_neighbors += 1
+
+			if river_neighbors >= 3 or water_neighbors >= 2:
+				cells_to_convert.append(cell)
+
+		for cell: HexCell in cells_to_convert:
+			cell.cell_type = "water"
+			has_converted_cells = true
 
 
 func get_cell(coordinate: Vector2i) -> HexCell:
@@ -597,6 +842,11 @@ func _get_neighbor_offsets(column: int) -> Dictionary[StringName, Vector2i]:
 func _clear_cells() -> void:
 	_clear_generated_trees()
 	_clear_tree_growth()
+	for assignment: Dictionary in _level_progress_assignments.values():
+		var viewport: SubViewport = assignment["viewport"]
+		viewport.render_target_update_mode = SubViewport.UPDATE_DISABLED
+		_available_level_progress_viewports.append(viewport)
+	_level_progress_assignments.clear()
 	for child: Node in get_children():
 		if child is HexCell:
 			child.free()
