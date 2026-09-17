@@ -1,11 +1,43 @@
 extends Node3D
 
+@onready var world_cells: WorldCells = $WorldCells
+@onready var fps_label: Label = $UserInterface/Panel/MarginContainer/VBoxContainer/FPSLabel
+@onready var life_label: Label = $UserInterface/Panel/MarginContainer/VBoxContainer/LifeLabel
+@onready var tree_count_label: Label = $UserInterface/Panel/MarginContainer/VBoxContainer/TreeCountLabel
+@onready var regenerate_button: Button = $UserInterface/Panel/MarginContainer/VBoxContainer/RegenerateButton
+@onready var level_slider: HSlider = $UserInterface/Panel/MarginContainer/VBoxContainer/LevelSlider
+@onready var width_slider: HSlider = $UserInterface/Panel/MarginContainer/VBoxContainer/WidthSlider
+@onready var height_slider: HSlider = $UserInterface/Panel/MarginContainer/VBoxContainer/HeightSlider
+@onready var level_value_label: Label = $UserInterface/Panel/MarginContainer/VBoxContainer/LevelValueLabel
+@onready var width_value_label: Label = $UserInterface/Panel/MarginContainer/VBoxContainer/WidthValueLabel
+@onready var height_value_label: Label = $UserInterface/Panel/MarginContainer/VBoxContainer/HeightValueLabel
 
-# Called when the node enters the scene tree for the first time.
 func _ready() -> void:
-	pass # Replace with function body.
+	regenerate_button.pressed.connect(_on_regenerate_pressed)
+	level_slider.value_changed.connect(_on_slider_changed)
+	width_slider.value_changed.connect(_on_slider_changed)
+	height_slider.value_changed.connect(_on_slider_changed)
+	_update_slider_labels()
 
 
-# Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(_delta: float) -> void:
-	pass
+	fps_label.text = "FPS: %d" % Engine.get_frames_per_second()
+	life_label.text = "Vida: %d" % world_cells.life
+	tree_count_label.text = "Trees: %d" % world_cells.generated_tree_count
+
+
+func _on_regenerate_pressed() -> void:
+	world_cells.cell_level = int(level_slider.value)
+	world_cells.width = int(width_slider.value)
+	world_cells.height = int(height_slider.value)
+	world_cells.generate_world()
+
+
+func _on_slider_changed(_value: float) -> void:
+	_update_slider_labels()
+
+
+func _update_slider_labels() -> void:
+	level_value_label.text = "Cell level: %d" % int(level_slider.value)
+	width_value_label.text = "Width: %d" % int(width_slider.value)
+	height_value_label.text = "Height: %d" % int(height_slider.value)

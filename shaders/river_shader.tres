@@ -210,6 +210,7 @@ constant = 0.7
 input_name = "time"
 
 [resource]
+nodes/vertex/0/position = Vector2(400, 160)
 nodes/fragment/0/position = Vector2(2064, 752)
 nodes/fragment/3/node = SubResource("VisualShaderNodeExpression_kmgy6")
 nodes/fragment/3/position = Vector2(-752, 128)

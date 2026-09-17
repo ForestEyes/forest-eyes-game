@@ -3,13 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://f4s6i2f6hn2f"
-path="res://.godot/imported/tree.glb-d29a3d5b2d34de8f26474065b5543a28.scn"
+uid="uid://boucvaptsgfka"
+path="res://.godot/imported/Árvore 3.glb-c9e0f76f037ca04c78cc9fd9745aec9c.scn"
 
 [deps]
 
-source_file="res://assets/tree.glb"
-dest_files=["res://.godot/imported/tree.glb-d29a3d5b2d34de8f26474065b5543a28.scn"]
+source_file="res://assets/Árvore 3.glb"
+dest_files=["res://.godot/imported/Árvore 3.glb-c9e0f76f037ca04c78cc9fd9745aec9c.scn"]
 
 [params]
 
@@ -41,8 +41,9 @@ materials/extract_format=0
 materials/extract_path=""
 _subresources={
 "nodes": {
-"PATH:Copa 1": {
-"generate/occluder": 1
+"PATH:Copa 3": {
+"generate/occluder": 1,
+"mesh_instance/cast_shadow": 0
 }
 }
 }

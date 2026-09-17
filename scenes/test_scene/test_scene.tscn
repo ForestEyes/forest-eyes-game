@@ -2,8 +2,8 @@
 
 [ext_resource type="Script" uid="uid://lc12efcpdcn1" path="res://scenes/test_scene/test_scene.gd" id="1_8pyld"]
 [ext_resource type="PackedScene" uid="uid://bodn2ry8sf5r3" path="res://scenes/camera_controller/camera_controller.tscn" id="2_l4ihe"]
-[ext_resource type="PackedScene" uid="uid://c3b0c15tll05m" path="res://scenes/test_scene/test_tilemap.tscn" id="2_mndh0"]
-[ext_resource type="PackedScene" uid="uid://deqnapxcuycrx" path="res://assets/tree2.glb" id="4_wgdak"]
+[ext_resource type="Script" uid="uid://cdqjjwsevevnm" path="res://scenes/hex_cell/world_cells.gd" id="4_wgdak"]
+[ext_resource type="PackedScene" uid="uid://buckfelwgjxyv" path="res://scenes/hex_cell/hex_cell.tscn" id="5_wgdak"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_mndh0"]
 sky_horizon_color = Color(0.66224277, 0.6717428, 0.6867428, 1)
@@ -16,64 +16,110 @@ sky_material = SubResource("ProceduralSkyMaterial_mndh0")
 background_mode = 2
 sky = SubResource("Sky_1x7oe")
 
-[sub_resource type="ViewportTexture" id="ViewportTexture_yeiif"]
-viewport_path = NodePath("SubViewport")
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_8pyld"]
-resource_local_to_scene = true
-albedo_texture = SubResource("ViewportTexture_yeiif")
-
-[sub_resource type="PlaneMesh" id="PlaneMesh_yeiif"]
-resource_local_to_scene = true
-material = SubResource("StandardMaterial3D_8pyld")
-size = Vector2(16, 16)
-
 [node name="TestScene" type="Node3D" unique_id=1411787965]
 script = ExtResource("1_8pyld")
 
 [node name="CameraController" parent="." unique_id=421798543 instance=ExtResource("2_l4ihe")]
+pan_speed = 8.0
+drag_sensitivity = 0.025
+limit_left = -8.0
+limit_right = 8.0
+limit_top = -8.0
+limit_bottom = 8.0
+min_zoom = 5.0
+max_zoom = 25.0
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=2009360600]
-transform = Transform3D(-0.76656276, -0.61084974, 0.19810152, 0.6338644, -0.67029285, 0.38590604, -0.10294458, 0.4213907, 0.9010174, 0.19385332, 1.5262556, 0.13937199)
+transform = Transform3D(-0.48328245, -0.87426466, -0.045818258, 0, -0.05233594, 0.9986295, -0.8754645, 0.48262012, 0.025293041, 0.19385332, 2.7476301, 2.002348)
 shadow_enabled = true
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1374679162]
 environment = SubResource("Environment_l4ihe")
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=2006431272]
-mesh = SubResource("PlaneMesh_yeiif")
+[node name="WorldCells" type="Node3D" parent="." unique_id=1631279543]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.25, 0)
+script = ExtResource("4_wgdak")
+height = 10
+width = 10
+cell_level = 5
+water_border_distance = 1
+water_chance = 0.05
+water_neighbor_influence = 0.1
 
-[node name="SubViewport" type="SubViewport" parent="." unique_id=1942032928]
-size = Vector2i(2000, 2000)
+[node name="HexCell" parent="WorldCells" unique_id=1032575564 instance=ExtResource("5_wgdak")]
+current_level = 7
 
-[node name="TestTilemap" parent="SubViewport" unique_id=1249042114 instance=ExtResource("2_mndh0")]
-position = Vector2(1000, 1000)
+[node name="HexCell2" parent="WorldCells" unique_id=446505729 instance=ExtResource("5_wgdak")]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 1.55, 0, 0.891)
+current_level = 7
 
-[node name="trees" type="Node3D" parent="." unique_id=303036249]
+[node name="HexCell3" parent="WorldCells" unique_id=231115819 instance=ExtResource("5_wgdak")]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 0, 0, 1.782)
+current_level = 7
 
-[node name="tree2" parent="trees" unique_id=1677695163 instance=ExtResource("4_wgdak")]
-transform = Transform3D(0.0009218632, 0, 0.00038751558, 0, 0.001, 0, -0.00038751558, 0, 0.0009218632, 1.3650736, 0, 0.13536286)
+[node name="UserInterface" type="CanvasLayer" parent="." unique_id=6170724]
 
-[node name="tree3" parent="trees" unique_id=1406459375 instance=ExtResource("4_wgdak")]
-transform = Transform3D(0.0009218632, 0, 0.00038751558, 0, 0.001, 0, -0.00038751558, 0, 0.0009218632, 1.3605912, 0, 0.27075624)
+[node name="Panel" type="PanelContainer" parent="UserInterface" unique_id=1358000210]
+offset_left = 16.0
+offset_top = 16.0
+offset_right = 296.0
+offset_bottom = 330.0
 
-[node name="tree4" parent="trees" unique_id=530929960 instance=ExtResource("4_wgdak")]
-transform = Transform3D(0.0009218632, 0, 0.00038751558, 0, 0.001, 0, -0.00038751558, 0, 0.0009218632, 1.1235784, -2.9802322e-08, 0.30293804)
+[node name="MarginContainer" type="MarginContainer" parent="UserInterface/Panel" unique_id=1360321401]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 8
 
-[node name="tree5" parent="trees" unique_id=629677001 instance=ExtResource("4_wgdak")]
-transform = Transform3D(0.0009218632, 0, 0.00038751558, 0, 0.001, 0, -0.00038751558, 0, 0.0009218632, 1.1235784, -2.9802322e-08, 0.30293804)
+[node name="VBoxContainer" type="VBoxContainer" parent="UserInterface/Panel/MarginContainer" unique_id=1264176391]
+layout_mode = 2
+theme_override_constants/separation = 6
 
-[node name="tree6" parent="trees" unique_id=254156040 instance=ExtResource("4_wgdak")]
-transform = Transform3D(0.0009218632, 0, 0.00038751558, 0, 0.001, 0, -0.00038751558, 0, 0.0009218632, 1.16793, 0, 0.18905509)
+[node name="FPSLabel" type="Label" parent="UserInterface/Panel/MarginContainer/VBoxContainer" unique_id=199061539]
+layout_mode = 2
+text = "FPS: 0"
 
-[node name="tree7" parent="trees" unique_id=1666957757 instance=ExtResource("4_wgdak")]
-transform = Transform3D(0.0009218632, 0, 0.00038751558, 0, 0.001, 0, -0.00038751558, 0, 0.0009218632, 1.2949021, -5.9604645e-08, 0.18097913)
+[node name="LifeLabel" type="Label" parent="UserInterface/Panel/MarginContainer/VBoxContainer" unique_id=1508956175]
+layout_mode = 2
+text = "Vida: 0"
 
-[node name="tree8" parent="trees" unique_id=1900823560 instance=ExtResource("4_wgdak")]
-transform = Transform3D(0.0009218632, 0, 0.00038751558, 0, 0.001, 0, -0.00038751558, 0, 0.0009218632, 1.4303428, -5.9604645e-08, 0.2243104)
+[node name="TreeCountLabel" type="Label" parent="UserInterface/Panel/MarginContainer/VBoxContainer" unique_id=1438673404]
+layout_mode = 2
+text = "Trees: 0"
 
-[node name="tree9" parent="trees" unique_id=2092982899 instance=ExtResource("4_wgdak")]
-transform = Transform3D(0.0009218632, 0, 0.00038751558, 0, 0.001, 0, -0.00038751558, 0, 0.0009218632, 1.4282303, -2.9802322e-08, 0.31532353)
+[node name="LevelValueLabel" type="Label" parent="UserInterface/Panel/MarginContainer/VBoxContainer" unique_id=168705214]
+layout_mode = 2
+text = "Cell level: 5"
 
-[node name="tree10" parent="trees" unique_id=1917215442 instance=ExtResource("4_wgdak")]
-transform = Transform3D(0.0009218632, 0, 0.00038751558, 0, 0.001, 0, -0.00038751558, 0, 0.0009218632, 1.1879297, -2.9802322e-08, 0.3942154)
+[node name="LevelSlider" type="HSlider" parent="UserInterface/Panel/MarginContainer/VBoxContainer" unique_id=72909851]
+custom_minimum_size = Vector2(240, 20)
+layout_mode = 2
+max_value = 15.0
+value = 5.0
+
+[node name="WidthValueLabel" type="Label" parent="UserInterface/Panel/MarginContainer/VBoxContainer" unique_id=317635927]
+layout_mode = 2
+text = "Width: 10"
+
+[node name="WidthSlider" type="HSlider" parent="UserInterface/Panel/MarginContainer/VBoxContainer" unique_id=268774940]
+custom_minimum_size = Vector2(240, 20)
+layout_mode = 2
+min_value = 1.0
+max_value = 50.0
+value = 10.0
+
+[node name="HeightValueLabel" type="Label" parent="UserInterface/Panel/MarginContainer/VBoxContainer" unique_id=1132468169]
+layout_mode = 2
+text = "Height: 10"
+
+[node name="HeightSlider" type="HSlider" parent="UserInterface/Panel/MarginContainer/VBoxContainer" unique_id=494339860]
+custom_minimum_size = Vector2(240, 20)
+layout_mode = 2
+min_value = 1.0
+max_value = 50.0
+value = 10.0
+
+[node name="RegenerateButton" type="Button" parent="UserInterface/Panel/MarginContainer/VBoxContainer" unique_id=738374345]
+layout_mode = 2
+text = "Regenerate World"

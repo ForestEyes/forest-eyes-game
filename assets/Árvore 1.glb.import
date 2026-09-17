@@ -3,13 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://f4s6i2f6hn2f"
-path="res://.godot/imported/tree.glb-d29a3d5b2d34de8f26474065b5543a28.scn"
+uid="uid://bkv2lw7orpds0"
+path="res://.godot/imported/Árvore 1.glb-aa959234d6e7c154af823098407a30a6.scn"
 
 [deps]
 
-source_file="res://assets/tree.glb"
-dest_files=["res://.godot/imported/tree.glb-d29a3d5b2d34de8f26474065b5543a28.scn"]
+source_file="res://assets/Árvore 1.glb"
+dest_files=["res://.godot/imported/Árvore 1.glb-aa959234d6e7c154af823098407a30a6.scn"]
 
 [params]
 
@@ -40,9 +40,21 @@ materials/extract=0
 materials/extract_format=0
 materials/extract_path=""
 _subresources={
+"meshes": {
+"Árvore 1_Tronco": {
+"generate/lightmap_uv": 1,
+"generate/lods": 1,
+"generate/shadow_meshes": 1,
+"lods/normal_merge_angle": 45.0,
+"save_to_file/enabled": false,
+"save_to_file/fallback_path": "",
+"save_to_file/path": ""
+}
+},
 "nodes": {
-"PATH:Copa 1": {
-"generate/occluder": 1
+"PATH:Tronco": {
+"generate/occluder": 1,
+"mesh_instance/cast_shadow": 0
 }
 }
 }

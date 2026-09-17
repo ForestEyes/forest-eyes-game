@@ -1,0 +1,8 @@
+[gd_scene format=3 uid="uid://dp1uexaml3pfa"]
+
+[ext_resource type="PackedScene" uid="uid://dyvt8papf5nn6" path="res://assets/Árvore 2.glb" id="1_320ya"]
+
+[node name="Tree2" type="Node3D" unique_id=155347369]
+
+[node name="Árvore 2" parent="." unique_id=891631397 instance=ExtResource("1_320ya")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.40197754, -0.038085938, 0)
