@@ -15,6 +15,7 @@ sky_material = SubResource("ProceduralSkyMaterial_mndh0")
 [sub_resource type="Environment" id="Environment_l4ihe"]
 background_mode = 2
 sky = SubResource("Sky_1x7oe")
+ambient_light_source = 3
 
 [node name="TestScene" type="Node3D" unique_id=1411787965]
 script = ExtResource("1_8pyld")
@@ -39,8 +40,8 @@ environment = SubResource("Environment_l4ihe")
 [node name="WorldCells" type="Node3D" parent="." unique_id=1631279543]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.25, 0)
 script = ExtResource("4_wgdak")
-height = 10
-width = 10
+height = 20
+width = 20
 cell_level = 5
 water_border_distance = 1
 water_chance = 0.05
@@ -84,6 +85,14 @@ text = "FPS: 0"
 layout_mode = 2
 text = "Vida: 0"
 
+[node name="WaterLabel" type="Label" parent="UserInterface/Panel/MarginContainer/VBoxContainer" unique_id=383759777]
+layout_mode = 2
+text = "Water: 0"
+
+[node name="ScienceLabel" type="Label" parent="UserInterface/Panel/MarginContainer/VBoxContainer" unique_id=200773745]
+layout_mode = 2
+text = "Ciência: 0"
+
 [node name="TreeCountLabel" type="Label" parent="UserInterface/Panel/MarginContainer/VBoxContainer" unique_id=1438673404]
 layout_mode = 2
 text = "Trees: 0"
@@ -100,26 +109,30 @@ value = 5.0
 
 [node name="WidthValueLabel" type="Label" parent="UserInterface/Panel/MarginContainer/VBoxContainer" unique_id=317635927]
 layout_mode = 2
-text = "Width: 10"
+text = "Width: 20"
 
 [node name="WidthSlider" type="HSlider" parent="UserInterface/Panel/MarginContainer/VBoxContainer" unique_id=268774940]
 custom_minimum_size = Vector2(240, 20)
 layout_mode = 2
 min_value = 1.0
 max_value = 50.0
-value = 10.0
+value = 20.0
 
 [node name="HeightValueLabel" type="Label" parent="UserInterface/Panel/MarginContainer/VBoxContainer" unique_id=1132468169]
 layout_mode = 2
-text = "Height: 10"
+text = "Height: 20"
 
 [node name="HeightSlider" type="HSlider" parent="UserInterface/Panel/MarginContainer/VBoxContainer" unique_id=494339860]
 custom_minimum_size = Vector2(240, 20)
 layout_mode = 2
 min_value = 1.0
 max_value = 50.0
-value = 10.0
+value = 20.0
 
 [node name="RegenerateButton" type="Button" parent="UserInterface/Panel/MarginContainer/VBoxContainer" unique_id=738374345]
 layout_mode = 2
 text = "Regenerate World"
+
+[node name="ScienceButton" type="Button" parent="UserInterface/Panel/MarginContainer/VBoxContainer" unique_id=6621721]
+layout_mode = 2
+text = "+1 ciencia"

@@ -11,8 +11,11 @@ func _input(event: InputEvent) -> void:
 		return
 
 	var mousepos: Vector2 = get_viewport().get_mouse_position()
-	global_position = camera.project_ray_origin(mousepos)
-	target_position = global_position + camera.project_ray_normal(mousepos) * RAY_LENGTH
+	var ray_origin: Vector3 = camera.project_ray_origin(mousepos)
+	var ray_direction: Vector3 = camera.project_ray_normal(mousepos)
+	var ray_end: Vector3 = ray_origin + ray_direction * RAY_LENGTH
+	global_position = ray_origin
+	target_position = to_local(ray_end)
 	force_raycast_update()
 
 	if not is_colliding():
