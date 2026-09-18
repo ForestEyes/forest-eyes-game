@@ -19,6 +19,9 @@ func _input(event: InputEvent) -> void:
 		return
 
 	var cell: HexCell = get_collider().get_parent()
+	
+	cell.pulse()
+	
 	if event.button_index == MOUSE_BUTTON_LEFT:
 		cell.increase_level(1)
 	else:

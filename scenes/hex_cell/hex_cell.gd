@@ -167,3 +167,7 @@ func populate_cell() -> void:
 	water_mesh.visible = cell_type == "water"
 	grass_mesh.visible = cell_type == "forest" or cell_type == "river"
 	river_mesh.visible = cell_type == "river"
+
+
+func pulse() -> void:
+	$AnimationPlayer.play("pulse")
