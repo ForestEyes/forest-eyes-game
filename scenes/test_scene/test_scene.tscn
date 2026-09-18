@@ -3,7 +3,9 @@
 [ext_resource type="Script" uid="uid://lc12efcpdcn1" path="res://scenes/test_scene/test_scene.gd" id="1_8pyld"]
 [ext_resource type="PackedScene" uid="uid://bodn2ry8sf5r3" path="res://scenes/camera_controller/camera_controller.tscn" id="2_l4ihe"]
 [ext_resource type="Script" uid="uid://cdqjjwsevevnm" path="res://scenes/hex_cell/world_cells.gd" id="4_wgdak"]
+[ext_resource type="Script" uid="uid://bnutt25en8ai8" path="res://addons/signal_bus/signal_bus_receiver.gd" id="5_doi4a"]
 [ext_resource type="PackedScene" uid="uid://buckfelwgjxyv" path="res://scenes/hex_cell/hex_cell.tscn" id="5_wgdak"]
+[ext_resource type="Script" uid="uid://dugj4fmmq04pd" path="res://scenes/effects/particles/particle_system.gd" id="6_doi4a"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_mndh0"]
 sky_horizon_color = Color(0.66224277, 0.6717428, 0.6867428, 1)
@@ -123,3 +125,12 @@ value = 10.0
 [node name="RegenerateButton" type="Button" parent="UserInterface/Panel/MarginContainer/VBoxContainer" unique_id=738374345]
 layout_mode = 2
 text = "Regenerate World"
+
+[node name="SignalBusReceiver" type="Node" parent="." unique_id=259291968]
+script = ExtResource("5_doi4a")
+metadata/_custom_type_script = "uid://bnutt25en8ai8"
+
+[node name="ParticleSystem" type="Node3D" parent="." unique_id=1270868432]
+script = ExtResource("6_doi4a")
+
+[connection signal="cell_increased_level" from="SignalBusReceiver" to="ParticleSystem" method="_on_signal_bus_receiver_cell_increased_level"]

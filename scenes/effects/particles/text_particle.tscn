@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://b2fa55bm7ateg"]
 
-[ext_resource type="Script" uid="uid://hw037wgj5sag" path="res://scenes/effects/particles/text_particles.gd" id="1_pwdja"]
+[ext_resource type="Script" uid="uid://hw037wgj5sag" path="res://scenes/effects/particles/text_particle.gd" id="1_pwdja"]
 [ext_resource type="Material" uid="uid://c3o68y8esldx7" path="res://scenes/effects/particles/text_particle_mat.tres" id="1_rhkjb"]
 
 [sub_resource type="ViewportTexture" id="ViewportTexture_l36mm"]
@@ -17,17 +17,16 @@ particles_anim_v_frames = 1
 particles_anim_loop = false
 
 [sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_pta3i"]
-direction = Vector3(0, 10, 0)
+direction = Vector3(0, 1, 0)
 spread = 16.133
-flatness = 1.0
-initial_velocity_min = 3.0
-initial_velocity_max = 3.5
-gravity = Vector3(0, -5.275, 0)
+initial_velocity_min = 2.2
+initial_velocity_max = 2.5
+gravity = Vector3(0, -2.415, 0)
 
 [sub_resource type="QuadMesh" id="QuadMesh_l4kcj"]
 material = ExtResource("1_rhkjb")
 
-[node name="TextParticles" type="Node3D" unique_id=14254770]
+[node name="TextParticle" type="Node3D" unique_id=14254770]
 script = ExtResource("1_pwdja")
 
 [node name="SubViewport" type="SubViewport" parent="." unique_id=373294656]
@@ -58,11 +57,13 @@ grow_vertical = 2
 theme_override_font_sizes/font_size = 33
 
 [node name="GPUParticles3D" type="GPUParticles3D" parent="." unique_id=1579515536]
-transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 0, 0, 0)
 material_override = SubResource("StandardMaterial3D_b1gld")
 cast_shadow = 0
 gi_mode = 0
 emitting = false
-lifetime = 1.3
+amount = 1
+lifetime = 2.0
+one_shot = true
+explosiveness = 1.0
 process_material = SubResource("ParticleProcessMaterial_pta3i")
 draw_pass_1 = SubResource("QuadMesh_l4kcj")

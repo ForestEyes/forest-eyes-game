@@ -46,6 +46,8 @@ const NEIGHBORS_OFFSET: Dictionary[StringName, Vector3] = {
 	"SW": Vector3(- (1.5 + OFFSET_GAP * sqrt(3) / 2), 0, (sqrt(3) / 2 + OFFSET_GAP / 2))
 }
 
+signal increased_level(spawn_position: Vector3)
+
 func _ready() -> void:
 	world_cells = get_parent()
 	level_progress.max_value = 100.0
@@ -57,6 +59,8 @@ func _ready() -> void:
 func increase_level(ammount: int, propagate_to_neighbors: bool = true) -> void:
 	if cell_type != "forest":
 		return
+
+	increased_level.emit(global_position)
 
 	var neighbor_clicks := 0
 	if propagate_to_neighbors:

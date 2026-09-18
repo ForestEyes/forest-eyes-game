@@ -2,16 +2,7 @@ class_name SignalBusReceiver
 extends Node
 
 @warning_ignore("unused_signal")
-signal player_right_mouse_pressed()
-@warning_ignore("unused_signal")
-signal player_money_changed(amount: int)
-@warning_ignore("unused_signal")
-signal player_picked_item()
-@warning_ignore("unused_signal")
-signal player_released_item()
-
-@warning_ignore("unused_signal")
-signal event_queue_finished_processing()
+signal cell_increased_level(spawn_position: Vector3)
 
 const GROUP := &'RECEIVER_GROUP'
 

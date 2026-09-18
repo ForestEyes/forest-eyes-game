@@ -8,6 +8,7 @@
 [ext_resource type="Shader" uid="uid://cicem1q2tu8kb" path="res://shaders/grass_shader.tres" id="6_pta3i"]
 [ext_resource type="Shader" uid="uid://cnjwxyjrbr78d" path="res://shaders/river_shader.tres" id="7_ajsww"]
 [ext_resource type="Shader" uid="uid://chi46a58tnce7" path="res://shaders/water_shader.tres" id="8_pta3i"]
+[ext_resource type="Script" uid="uid://pe86h5iykjwf" path="res://addons/signal_bus/signal_bus_sender.gd" id="9_ajsww"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_6vlsw"]
 render_priority = 0
@@ -152,6 +153,13 @@ texture = SubResource("ViewportTexture_yeiif")
 
 [node name="AnimationPlayer" type="AnimationPlayer" parent="." unique_id=1311027382]
 libraries/ = SubResource("AnimationLibrary_g6606")
+
+[node name="SignalBusSender" type="Node" parent="." unique_id=1231837531]
+script = ExtResource("9_ajsww")
+signal_prefix = "cell_"
+metadata/_custom_type_script = "uid://pe86h5iykjwf"
+
+[connection signal="increased_level" from="." to="SignalBusSender" method="connect_signal"]
 
 [editable path="WaterShader"]
 [editable path="GrassShader"]
