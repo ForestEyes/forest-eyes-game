@@ -16,8 +16,8 @@ shader_parameter/Color1 = Color(0.043137, 0.14902, 0.203922, 1)
 shader_parameter/Color2 = Color(0.156863, 0.372549, 0.45098, 1)
 shader_parameter/Scale = 1.0
 shader_parameter/Foam_Color = Color(0.443137, 0.815686, 0.972549, 1)
-shader_parameter/Foam_Scale = 3.0
-shader_parameter/Foam_Opacity = 0.2
+shader_parameter/Foam_Scale = 1.6840000799900001
+shader_parameter/Foam_Opacity = 0.0910000043225
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_yeiif"]
 render_priority = 0
