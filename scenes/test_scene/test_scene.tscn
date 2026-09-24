@@ -97,16 +97,6 @@ text = "Ciência: 0"
 layout_mode = 2
 text = "Trees: 0"
 
-[node name="LevelValueLabel" type="Label" parent="UserInterface/Panel/MarginContainer/VBoxContainer" unique_id=168705214]
-layout_mode = 2
-text = "Cell level: 5"
-
-[node name="LevelSlider" type="HSlider" parent="UserInterface/Panel/MarginContainer/VBoxContainer" unique_id=72909851]
-custom_minimum_size = Vector2(240, 20)
-layout_mode = 2
-max_value = 15.0
-value = 5.0
-
 [node name="WidthValueLabel" type="Label" parent="UserInterface/Panel/MarginContainer/VBoxContainer" unique_id=317635927]
 layout_mode = 2
 text = "Width: 20"

@@ -148,6 +148,17 @@ func _process(delta: float) -> void:
 	_update_cell_visibility()
 
 
+func _generate_weighted_cell_level(rng: RandomNumberGenerator) -> int:
+	var bucket_roll := rng.randi_range(1, 11)
+	if bucket_roll <= 5:
+		return 0
+	if bucket_roll <= 8:
+		return rng.randi_range(1, 5)
+	if bucket_roll <= 10:
+		return rng.randi_range(6, 10)
+	return rng.randi_range(11, 15)
+
+
 func generate_world() -> void:
 	is_generated = false
 	generated_tree_count = 0
@@ -178,7 +189,7 @@ func generate_world() -> void:
 
 			var coordinate := Vector2i(column, row)
 			cell.name = "HexCell_%d_%d" % [column, row]
-			cell.current_level = randi_range(0, 10)
+			cell.current_level = _generate_weighted_cell_level(rng)
 			cell.cell_type = "water"
 			cell.position = _get_cell_position(coordinate)
 			add_child(cell)
