@@ -25,8 +25,8 @@ const LEVEL_PROGRESS_VIEWPORT_POOL_SIZE: int = 10
 @export var culling_camera_path: NodePath = NodePath("../CameraController")
 @export var culling_target_path: NodePath = NodePath("../CameraController/CameraTarget")
 @export_range(1.0, 10.0, 0.1) var culling_zoom_multiplier: float = 2.5
-@export_range(0.0, 100.0, 1.0) var culling_distance_offset: float = 10.0
-@export_range(0.05, 1.0, 0.05) var culling_update_interval: float = 0.2
+@export_range(0.0, 100.0, 1.0) var culling_distance_offset: float = 12.0
+@export_range(0.05, 1.0, 0.05) var culling_update_interval: float = 0.05
 @export_range(2, 20, 1) var tree_chunk_size: int = 2
 @export_group("Tree LOD")
 @export var enable_tree_lod: bool = true
@@ -178,7 +178,7 @@ func generate_world() -> void:
 
 			var coordinate := Vector2i(column, row)
 			cell.name = "HexCell_%d_%d" % [column, row]
-			cell.current_level = cell_level
+			cell.current_level = randi_range(0, 10)
 			cell.cell_type = "water"
 			cell.position = _get_cell_position(coordinate)
 			add_child(cell)
@@ -444,8 +444,26 @@ func _collect_tree_mesh_data(
 	if node is MeshInstance3D:
 		var mesh_instance: MeshInstance3D = node as MeshInstance3D
 		if mesh_instance.mesh != null:
+			var mesh: Mesh = mesh_instance.mesh
+			var material_overrides: Array[Material] = []
+			for surface_index: int in range(mesh.get_surface_count()):
+				var material: Material = mesh_instance.get_surface_override_material(surface_index)
+				if material != null:
+					material_overrides.append(material)
+				else:
+					material_overrides.append(null)
+
+			if material_overrides.any(func(material: Material) -> bool:
+				return material != null
+			):
+				var mesh_copy: Mesh = mesh.duplicate()
+				for surface_index: int in range(mini(mesh_copy.get_surface_count(), material_overrides.size())):
+					if material_overrides[surface_index] != null:
+						mesh_copy.surface_set_material(surface_index, material_overrides[surface_index])
+				mesh = mesh_copy
+
 			result.append({
-				"mesh": mesh_instance.mesh,
+				"mesh": mesh,
 				"transform": node_transform,
 				"tree_index": tree_index
 			})

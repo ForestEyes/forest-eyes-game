@@ -31,7 +31,7 @@ min_zoom = 5.0
 max_zoom = 25.0
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=2009360600]
-transform = Transform3D(-0.48328245, -0.87426466, -0.045818258, 0, -0.05233594, 0.9986295, -0.8754645, 0.48262012, 0.025293041, 0.19385332, 2.7476301, 2.002348)
+transform = Transform3D(-0.3798996, -0.6548937, -0.6532923, -0.29872775, -0.581543, 0.7566833, -0.8754646, 0.48262018, 0.025293045, -0.11461836, 3.0174055, 2.002348)
 shadow_enabled = true
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1374679162]
