@@ -18,6 +18,7 @@ config/icon="res://icon.svg"
 [autoload]
 
 PhantomCameraManager="*uid://duq6jhf6unyis"
+SignalBus="*uid://bvb68xi3ey26k"
 
 [debug]
 
