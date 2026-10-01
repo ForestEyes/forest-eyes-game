@@ -55,6 +55,12 @@ output_port_for_preview = 0
 default_input_values = [0, Vector3(0, 0, 0), 1, Vector3(1, 1, 1), 2, Vector3(0.5, 0.5, 0.5)]
 op_type = 3
 
+[sub_resource type="VisualShaderNodeColorConstant" id="VisualShaderNodeColorConstant_1gghw"]
+constant = Color(0.044529572, 0.14718959, 0.20327237, 1)
+
+[sub_resource type="VisualShaderNodeColorConstant" id="VisualShaderNodeColorConstant_lvilb"]
+constant = Color(0.1560016, 0.37257263, 0.4512515, 1)
+
 [sub_resource type="VisualShaderNodeFloatConstant" id="VisualShaderNodeFloatConstant_6oag4"]
 constant = 3.0
 
@@ -337,6 +343,10 @@ nodes/fragment/18/node = SubResource("VisualShaderNodeMultiplyAdd_6oag4")
 nodes/fragment/18/position = Vector2(224, 64)
 nodes/fragment/19/node = SubResource("VisualShaderNodeMix_cytmc")
 nodes/fragment/19/position = Vector2(976, -112)
+nodes/fragment/20/node = SubResource("VisualShaderNodeColorConstant_1gghw")
+nodes/fragment/20/position = Vector2(720, -128)
+nodes/fragment/21/node = SubResource("VisualShaderNodeColorConstant_lvilb")
+nodes/fragment/21/position = Vector2(720, -48)
 nodes/fragment/22/node = SubResource("VisualShaderNodeFloatConstant_6oag4")
 nodes/fragment/22/position = Vector2(-1168, 1568)
 nodes/fragment/23/node = SubResource("VisualShaderNodeFloatConstant_cytmc")
@@ -430,4 +440,4 @@ nodes/fragment/53/node = SubResource("VisualShaderNodeFloatParameter_4ltl1")
 nodes/fragment/53/position = Vector2(-3408, -400)
 nodes/fragment/54/node = SubResource("VisualShaderNodeVectorOp_oletk")
 nodes/fragment/54/position = Vector2(-3024, -224)
-nodes/fragment/connections = PackedInt32Array(5, 0, 3, 1, 6, 0, 3, 2, 7, 0, 3, 3, 9, 0, 3, 4, 10, 0, 3, 5, 11, 0, 16, 2, 12, 0, 16, 3, 15, 0, 16, 4, 17, 0, 16, 5, 16, 0, 18, 0, 3, 0, 18, 2, 18, 0, 19, 2, 22, 0, 28, 1, 23, 0, 28, 2, 24, 0, 28, 3, 26, 0, 28, 4, 27, 0, 28, 5, 19, 0, 31, 0, 30, 0, 31, 1, 28, 0, 29, 1, 31, 0, 0, 0, 30, 0, 32, 0, 32, 0, 31, 2, 29, 0, 30, 1, 34, 0, 28, 0, 35, 0, 37, 0, 37, 0, 34, 2, 34, 0, 3, 0, 13, 0, 16, 1, 45, 0, 44, 0, 43, 0, 44, 1, 44, 1, 46, 0, 44, 3, 46, 1, 39, 0, 42, 2, 38, 1, 40, 0, 38, 3, 40, 1, 40, 0, 42, 0, 41, 0, 42, 1, 46, 0, 35, 0, 46, 0, 34, 0, 46, 0, 16, 0, 47, 0, 19, 0, 48, 0, 19, 1, 49, 0, 32, 1, 50, 0, 31, 1, 51, 0, 28, 5, 34, 0, 16, 0, 53, 0, 54, 0, 46, 0, 54, 1, 54, 0, 34, 0, 54, 0, 35, 0)
+nodes/fragment/connections = PackedInt32Array(5, 0, 3, 1, 6, 0, 3, 2, 7, 0, 3, 3, 9, 0, 3, 4, 10, 0, 3, 5, 11, 0, 16, 2, 12, 0, 16, 3, 15, 0, 16, 4, 17, 0, 16, 5, 16, 0, 18, 0, 3, 0, 18, 2, 18, 0, 19, 2, 20, 0, 19, 0, 21, 0, 19, 1, 22, 0, 28, 1, 23, 0, 28, 2, 24, 0, 28, 3, 26, 0, 28, 4, 27, 0, 28, 5, 19, 0, 31, 0, 30, 0, 31, 1, 28, 0, 29, 1, 31, 0, 0, 0, 30, 0, 32, 0, 32, 0, 31, 2, 29, 0, 30, 1, 34, 0, 28, 0, 35, 0, 37, 0, 37, 0, 34, 2, 34, 0, 3, 0, 13, 0, 16, 1, 45, 0, 44, 0, 43, 0, 44, 1, 44, 1, 46, 0, 44, 3, 46, 1, 39, 0, 42, 2, 38, 1, 40, 0, 38, 3, 40, 1, 40, 0, 42, 0, 41, 0, 42, 1, 46, 0, 35, 0, 46, 0, 34, 0, 46, 0, 16, 0, 47, 0, 19, 0, 48, 0, 19, 1, 49, 0, 32, 1, 50, 0, 31, 1, 51, 0, 28, 5, 34, 0, 16, 0, 53, 0, 54, 0, 46, 0, 54, 1, 54, 0, 34, 0, 54, 0, 35, 0)

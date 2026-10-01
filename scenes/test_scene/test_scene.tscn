@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" uid="uid://lc12efcpdcn1" path="res://scenes/test_scene/test_scene.gd" id="1_8pyld"]
 [ext_resource type="PackedScene" uid="uid://bodn2ry8sf5r3" path="res://scenes/camera_controller/camera_controller.tscn" id="2_l4ihe"]
-[ext_resource type="Script" uid="uid://cdqjjwsevevnm" path="res://scenes/hex_cell/world_cells.gd" id="4_wgdak"]
+[ext_resource type="Script" uid="uid://l0sg7fg5jyhs" path="res://scenes/hex_cell/world_cells.gd" id="4_wgdak"]
 [ext_resource type="Script" uid="uid://bnutt25en8ai8" path="res://addons/signal_bus/signal_bus_receiver.gd" id="5_doi4a"]
 [ext_resource type="PackedScene" uid="uid://buckfelwgjxyv" path="res://scenes/hex_cell/hex_cell.tscn" id="5_wgdak"]
 [ext_resource type="Script" uid="uid://dugj4fmmq04pd" path="res://scenes/effects/particles/particle_system.gd" id="6_doi4a"]
@@ -17,6 +17,7 @@ sky_material = SubResource("ProceduralSkyMaterial_mndh0")
 [sub_resource type="Environment" id="Environment_l4ihe"]
 background_mode = 2
 sky = SubResource("Sky_1x7oe")
+ambient_light_source = 3
 
 [node name="TestScene" type="Node3D" unique_id=1411787965]
 script = ExtResource("1_8pyld")
@@ -32,7 +33,7 @@ min_zoom = 5.0
 max_zoom = 25.0
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=2009360600]
-transform = Transform3D(-0.48328245, -0.87426466, -0.045818258, 0, -0.05233594, 0.9986295, -0.8754645, 0.48262012, 0.025293041, 0.19385332, 2.7476301, 2.002348)
+transform = Transform3D(-0.3798996, -0.6548937, -0.6532923, -0.29872775, -0.581543, 0.7566833, -0.8754646, 0.48262018, 0.025293045, -0.11461836, 3.0174055, 2.002348)
 shadow_enabled = true
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1374679162]
@@ -41,12 +42,16 @@ environment = SubResource("Environment_l4ihe")
 [node name="WorldCells" type="Node3D" parent="." unique_id=1631279543]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.25, 0)
 script = ExtResource("4_wgdak")
-height = 10
-width = 10
+height = 20
+width = 20
 cell_level = 5
 water_border_distance = 1
 water_chance = 0.05
 water_neighbor_influence = 0.1
+river_source_lake_width = 0.35
+river_source_lake_length = 0.4
+river_width_variation = 0.15
+river_position_noise = 0.41
 
 [node name="HexCell" parent="WorldCells" unique_id=1032575564 instance=ExtResource("5_wgdak")]
 current_level = 7
@@ -86,45 +91,47 @@ text = "FPS: 0"
 layout_mode = 2
 text = "Vida: 0"
 
+[node name="WaterLabel" type="Label" parent="UserInterface/Panel/MarginContainer/VBoxContainer" unique_id=383759777]
+layout_mode = 2
+text = "Water: 0"
+
+[node name="ScienceLabel" type="Label" parent="UserInterface/Panel/MarginContainer/VBoxContainer" unique_id=200773745]
+layout_mode = 2
+text = "Ciência: 0"
+
 [node name="TreeCountLabel" type="Label" parent="UserInterface/Panel/MarginContainer/VBoxContainer" unique_id=1438673404]
 layout_mode = 2
 text = "Trees: 0"
 
-[node name="LevelValueLabel" type="Label" parent="UserInterface/Panel/MarginContainer/VBoxContainer" unique_id=168705214]
-layout_mode = 2
-text = "Cell level: 5"
-
-[node name="LevelSlider" type="HSlider" parent="UserInterface/Panel/MarginContainer/VBoxContainer" unique_id=72909851]
-custom_minimum_size = Vector2(240, 20)
-layout_mode = 2
-max_value = 15.0
-value = 5.0
-
 [node name="WidthValueLabel" type="Label" parent="UserInterface/Panel/MarginContainer/VBoxContainer" unique_id=317635927]
 layout_mode = 2
-text = "Width: 10"
+text = "Width: 20"
 
 [node name="WidthSlider" type="HSlider" parent="UserInterface/Panel/MarginContainer/VBoxContainer" unique_id=268774940]
 custom_minimum_size = Vector2(240, 20)
 layout_mode = 2
 min_value = 1.0
 max_value = 50.0
-value = 10.0
+value = 20.0
 
 [node name="HeightValueLabel" type="Label" parent="UserInterface/Panel/MarginContainer/VBoxContainer" unique_id=1132468169]
 layout_mode = 2
-text = "Height: 10"
+text = "Height: 20"
 
 [node name="HeightSlider" type="HSlider" parent="UserInterface/Panel/MarginContainer/VBoxContainer" unique_id=494339860]
 custom_minimum_size = Vector2(240, 20)
 layout_mode = 2
 min_value = 1.0
 max_value = 50.0
-value = 10.0
+value = 20.0
 
 [node name="RegenerateButton" type="Button" parent="UserInterface/Panel/MarginContainer/VBoxContainer" unique_id=738374345]
 layout_mode = 2
 text = "Regenerate World"
+
+[node name="ScienceButton" type="Button" parent="UserInterface/Panel/MarginContainer/VBoxContainer" unique_id=6621721]
+layout_mode = 2
+text = "+1 ciencia"
 
 [node name="SignalBusReceiver" type="Node" parent="." unique_id=259291968]
 script = ExtResource("5_doi4a")

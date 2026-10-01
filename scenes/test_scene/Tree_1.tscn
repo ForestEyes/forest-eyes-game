@@ -1,7 +1,15 @@
 [gd_scene format=3 uid="uid://bs7aom5fdjhvn"]
 
-[ext_resource type="PackedScene" uid="uid://bkv2lw7orpds0" path="res://assets/Árvore 1.glb" id="1_au2f1"]
+[ext_resource type="Script" uid="uid://dtcqq7vyuwjw" path="res://scenes/test_scene/tree_1.gd" id="1_5ulep"]
+[ext_resource type="ArrayMesh" uid="uid://b8y24px8raw64" path="res://assets/LowPoly_Tree_v1.obj" id="2_k5l52"]
+[ext_resource type="Material" uid="uid://73yenv60nodo" path="res://shaders/brown_material.tres" id="4_bbr08"]
+[ext_resource type="Material" uid="uid://daspk1xi711oa" path="res://shaders/green_material.tres" id="5_mssn3"]
 
 [node name="Tree1" type="Node3D" unique_id=155347369]
+script = ExtResource("1_5ulep")
 
-[node name="Árvore 1" parent="." unique_id=1723205229 instance=ExtResource("1_au2f1")]
+[node name="LowPolyTreeV1" type="MeshInstance3D" parent="." unique_id=1733699807]
+transform = Transform3D(0.001, 0, 0, 0, -3.924892e-05, 0.0009992295, 0, -0.0009992295, -3.924892e-05, 0.0012817383, -0.0013011396, 0.0087890625)
+mesh = ExtResource("2_k5l52")
+surface_material_override/0 = ExtResource("4_bbr08")
+surface_material_override/1 = ExtResource("5_mssn3")

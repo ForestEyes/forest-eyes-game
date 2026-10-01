@@ -40,6 +40,13 @@ materials/extract=0
 materials/extract_format=0
 materials/extract_path=""
 _subresources={
+"materials": {
+"material_0": {
+"use_external/enabled": false,
+"use_external/fallback_path": "res://shaders/green_material.tres",
+"use_external/path": "uid://daspk1xi711oa"
+}
+},
 "nodes": {
 "PATH:Copa 2": {
 "mesh_instance/cast_shadow": 0
