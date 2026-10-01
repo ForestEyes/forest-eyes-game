@@ -76,6 +76,9 @@ _data = {
 &"pulse": SubResource("Animation_ajsww")
 }
 
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_threat"]
+albedo_color = Color(0.8, 0.1, 0.1, 1)
+
 [node name="HexCell" type="Node3D" unique_id=1032575564]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 0, 0, 0)
 script = ExtResource("1_t7s5s")
@@ -99,6 +102,13 @@ transform = Transform3D(1, 0, 0, 0, 0.25, 0, 0, 0, 1, 0, 0, 0)
 
 [node name="Cylinder" parent="RiverShader" index="0" unique_id=288164901]
 surface_material_override/0 = SubResource("ShaderMaterial_y2k05")
+
+[node name="ThreatShader" parent="." unique_id=1032575565 instance=ExtResource("5_6vlsw")]
+transform = Transform3D(1, 0, 0, 0, 0.25, 0, 0, 0, 1, 0, 0.01, 0)
+visible = false
+
+[node name="Cylinder" parent="ThreatShader" index="0" unique_id=1920975223]
+surface_material_override/0 = SubResource("StandardMaterial3D_threat")
 
 [node name="Area3D" type="Area3D" parent="." unique_id=248437816]
 collision_mask = 0
@@ -127,3 +137,4 @@ metadata/_custom_type_script = "uid://pe86h5iykjwf"
 [editable path="WaterShader"]
 [editable path="GrassShader"]
 [editable path="RiverShader"]
+[editable path="ThreatShader"]

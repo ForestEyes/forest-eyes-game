@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" uid="uid://lc12efcpdcn1" path="res://scenes/test_scene/test_scene.gd" id="1_8pyld"]
 [ext_resource type="PackedScene" uid="uid://bodn2ry8sf5r3" path="res://scenes/camera_controller/camera_controller.tscn" id="2_l4ihe"]
-[ext_resource type="Script" uid="uid://cdqjjwsevevnm" path="res://scenes/hex_cell/world_cells.gd" id="4_wgdak"]
+[ext_resource type="Script" uid="uid://l0sg7fg5jyhs" path="res://scenes/hex_cell/world_cells.gd" id="4_wgdak"]
 [ext_resource type="Script" uid="uid://bnutt25en8ai8" path="res://addons/signal_bus/signal_bus_receiver.gd" id="5_doi4a"]
 [ext_resource type="PackedScene" uid="uid://buckfelwgjxyv" path="res://scenes/hex_cell/hex_cell.tscn" id="5_wgdak"]
 [ext_resource type="Script" uid="uid://dugj4fmmq04pd" path="res://scenes/effects/particles/particle_system.gd" id="6_doi4a"]
@@ -48,6 +48,10 @@ cell_level = 5
 water_border_distance = 1
 water_chance = 0.05
 water_neighbor_influence = 0.1
+river_source_lake_width = 0.35
+river_source_lake_length = 0.4
+river_width_variation = 0.15
+river_position_noise = 0.41
 
 [node name="HexCell" parent="WorldCells" unique_id=1032575564 instance=ExtResource("5_wgdak")]
 current_level = 7

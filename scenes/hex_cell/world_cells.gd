@@ -1,6 +1,10 @@
 class_name WorldCells
 extends Node3D
 
+## Orchestrates the hex-grid island: owns the cell dictionary and delegates
+## terrain, river, tree and visibility concerns to focused modules (see
+## scenes/hex_cell/world/ and [HexGrid]).
+
 signal world_generated(center: Vector3, bounds: AABB)
 
 const LEVEL_PROGRESS_VIEWPORT_SCENE: PackedScene = preload("res://scenes/hex_cell/level_progress_viewport.tscn")
@@ -33,11 +37,33 @@ const LEVEL_PROGRESS_VIEWPORT_POOL_SIZE: int = 10
 @export_range(0.0, 100.0, 0.5) var tree_lod_start_zoom: float = 8.0
 @export_range(0.0, 100.0, 0.5) var tree_lod_end_zoom: float = 25.0
 @export_range(0.05, 1.0, 0.05) var tree_lod_min_ratio: float = 0.2
+@export_group("River Rendering")
+@export_range(0.05, 2.0, 0.05) var river_width: float = 0.45
+@export_range(0.05, 2.0, 0.05) var river_max_width: float = 0.9
+@export_range(2, 50, 1) var river_min_points_for_scaling: int = 4
+@export_range(2, 100, 1) var river_max_points_for_scaling: int = 25
+@export_range(0.1, 3.0, 0.05) var river_source_lake_width: float = 1.1
+@export_range(0.1, 3.0, 0.1) var river_source_lake_length: float = 1.0
+@export_range(0.0, 1.0, 0.05) var river_width_variation: float = 0.35
+@export_range(0.0, 0.5, 0.01) var river_position_noise: float = 0.12
+@export_range(0.1, 5.0, 0.1) var river_noise_frequency: float = 1.5
+@export_range(0.001, 0.1, 0.002) var river_height_offset: float = 0.01
+@export_range(0.01, 0.5, 0.01) var river_curve_bake_interval: float = 0.1
+@export var river_shader: Shader = preload("res://shaders/water_shader.tres")
+@export var river_material: Material
 @export_group("Test Culling")
 @export var use_fixed_test_culling: bool = true
 @export_range(0.1, 100.0, 0.1) var fixed_test_culling_distance: float = 15
 @export var exact_test_tree_culling: bool = false
 @export var packed_hex_scene: PackedScene = preload("res://scenes/hex_cell/hex_cell.tscn")
+@export_group("Threats")
+@export_range(1.0, 120.0, 0.5) var threat_spawn_interval: float = 10.0
+@export_range(1, 50, 1) var threat_cells_per_wave: int = 5
+@export_range(0.5, 60.0, 0.5) var threat_effect_interval: float = 5.0
+
+const HEX_RADIUS: float = 1.0
+const HEX_HORIZONTAL_SPACING: float = HEX_RADIUS * 1.5 + 0.05
+const HEX_VERTICAL_SPACING: float = HEX_RADIUS * sqrt(3.0) + 0.025
 
 var cells: Dictionary[Vector2i, HexCell] = {}
 var is_generated: bool = false
@@ -45,118 +71,66 @@ var generated_tree_count: int = 0
 var life: int = 0
 var water: int = 0
 var science: int = 0
-var _culling_time: float = 0.0
-var _generated_tree_root: Node3D
-var _tree_growth_root: Node3D
-var _generated_tree_chunks: Dictionary[Vector2i, Node3D] = {}
+
 var _tree_generation_seed: int = 0
-var _active_tree_growth_tweens: int = 0
-var _pending_tree_animations: Dictionary = {}
-var _available_level_progress_viewports: Array[SubViewport] = []
-var _level_progress_assignments: Dictionary = {}
 
-
-const HEX_RADIUS: float = 1.0
-const HEX_HORIZONTAL_SPACING: float = HEX_RADIUS * 1.5 + 0.05
-const HEX_VERTICAL_SPACING: float = HEX_RADIUS * sqrt(3.0) + 0.025
-const CENTRAL_FOREST_RADIUS_RATIO: float = 0.2
-const TREE_MIN_DISTANCE: float = 0.150
-const TREE_SCALE_MULTIPLIER: float = 1.5
-
-
-const EVEN_COLUMN_NEIGHBOR_OFFSETS: Dictionary[StringName, Vector2i] = {
-	"N": Vector2i(0, -1),
-	"NE": Vector2i(1, -1),
-	"NW": Vector2i(-1, -1),
-	"S": Vector2i(0, 1),
-	"SE": Vector2i(1, 0),
-	"SW": Vector2i(-1, 0)
-}
-
-const ODD_COLUMN_NEIGHBOR_OFFSETS: Dictionary[StringName, Vector2i] = {
-	"N": Vector2i(0, -1),
-	"NE": Vector2i(1, 0),
-	"NW": Vector2i(-1, 0),
-	"S": Vector2i(0, 1),
-	"SE": Vector2i(1, 1),
-	"SW": Vector2i(-1, 1)
-}
+var _level_progress_pool: LevelProgressViewportPool
+var _culler: VisibilityCuller
+var _terrain: TerrainGenerator
+var _river_generator: RiverGenerator
+var _river_mesh_builder: RiverMeshBuilder
+var _tree_scatter: TreeScatter
+var _threat_manager: ThreatManager
 
 
 func _ready() -> void:
-	_initialize_level_progress_viewport_pool()
+	_level_progress_pool = LevelProgressViewportPool.new(self, LEVEL_PROGRESS_VIEWPORT_SCENE, LEVEL_PROGRESS_VIEWPORT_POOL_SIZE)
+	_culler = VisibilityCuller.new(
+		get_node_or_null(culling_camera_path) as Node3D,
+		get_node_or_null(culling_target_path) as Node3D
+	)
+	_threat_manager = ThreatManager.new(self)
 	generate_world()
 
 
-func _initialize_level_progress_viewport_pool() -> void:
-	for _index in range(LEVEL_PROGRESS_VIEWPORT_POOL_SIZE):
-		var viewport := LEVEL_PROGRESS_VIEWPORT_SCENE.instantiate() as SubViewport
-		if viewport == null:
-			push_error("The level progress viewport scene must have a SubViewport root node.")
-			continue
-		add_child(viewport)
-		_available_level_progress_viewports.append(viewport)
+func _process(delta: float) -> void:
+	_sync_culler_config()
+	_culler.tick(delta, cells, _tree_scatter.get_chunks() if _tree_scatter != null else {})
+
+	if is_generated:
+		_sync_threat_config()
+		_threat_manager.tick(delta, cells)
+
+
+func _sync_culler_config() -> void:
+	_culler.enable_distance_culling = enable_distance_culling
+	_culler.use_fixed_test_culling = use_fixed_test_culling
+	_culler.fixed_test_culling_distance = fixed_test_culling_distance
+	_culler.culling_zoom_multiplier = culling_zoom_multiplier
+	_culler.culling_distance_offset = culling_distance_offset
+	_culler.culling_update_interval = culling_update_interval
+	_culler.enable_tree_lod = enable_tree_lod
+	_culler.tree_lod_start_zoom = tree_lod_start_zoom
+	_culler.tree_lod_end_zoom = tree_lod_end_zoom
+	_culler.tree_lod_min_ratio = tree_lod_min_ratio
+
+
+func _sync_threat_config() -> void:
+	_threat_manager.spawn_interval = threat_spawn_interval
+	_threat_manager.cells_per_wave = threat_cells_per_wave
+	_threat_manager.effect_tick_interval = threat_effect_interval
 
 
 func acquire_level_progress_viewport(cell: HexCell) -> Dictionary:
-	if _level_progress_assignments.has(cell):
-		return _level_progress_assignments[cell]
-	if _available_level_progress_viewports.is_empty():
-		return {}
-
-	var viewport: SubViewport = _available_level_progress_viewports.pop_back()
-	var progress := viewport.get_node("Control/LevelProgress") as ProgressBar
-	progress.max_value = 100.0
-	progress.value = 0.0
-	viewport.render_target_update_mode = SubViewport.UPDATE_WHEN_VISIBLE
-
-	var assignment := {"viewport": viewport, "progress": progress}
-	_level_progress_assignments[cell] = assignment
-	return assignment
+	return _level_progress_pool.acquire(cell)
 
 
 func release_level_progress_viewport(cell: HexCell) -> void:
-	if not _level_progress_assignments.has(cell):
-		return
-
-	var assignment: Dictionary = _level_progress_assignments[cell]
-	_level_progress_assignments.erase(cell)
-	var viewport: SubViewport = assignment["viewport"]
-	var progress: ProgressBar = assignment["progress"]
-	progress.value = 0.0
-	viewport.render_target_update_mode = SubViewport.UPDATE_DISABLED
-	_available_level_progress_viewports.append(viewport)
+	_level_progress_pool.release(cell)
 
 
 func update_level_progress_viewport(viewport: SubViewport) -> void:
-	viewport.render_target_update_mode = SubViewport.UPDATE_WHEN_VISIBLE
-
-
-func _process(delta: float) -> void:
-	if not enable_distance_culling:
-		for cell: HexCell in cells.values():
-			_set_cell_visible(cell, true)
-		for chunk: Node3D in _generated_tree_chunks.values():
-			_set_tree_chunk_visible(chunk, true)
-		return
-
-	_culling_time += delta
-	if _culling_time < culling_update_interval:
-		return
-
-	_culling_time = 0.0
-	_update_cell_visibility()
-
-
-func _generate_weighted_cell_level(rng: RandomNumberGenerator) -> int:
-	var bucket_roll := rng.randi_range(1, 11)
-	if bucket_roll <= 5:
-		return 0
-	if bucket_roll <= 8:
-		return rng.randi_range(1, 5)
-	if bucket_roll <= 10:
-		return rng.randi_range(6, 10)
-	return rng.randi_range(11, 15)
+	_level_progress_pool.update(viewport)
 
 
 func generate_world() -> void:
@@ -167,6 +141,8 @@ func generate_world() -> void:
 	science = 0
 	_clear_cells()
 	cells.clear()
+	if _threat_manager != null:
+		_threat_manager.reset()
 
 	if packed_hex_scene == null:
 		push_error("WorldCells requires a packed hex cell scene.")
@@ -180,6 +156,11 @@ func generate_world() -> void:
 		rng.seed = random_seed
 		_tree_generation_seed = random_seed
 
+	_terrain = TerrainGenerator.new(width, height, water_border_distance, coastline_bay_depth, coastline_bay_frequency, _tree_generation_seed)
+	_river_generator = RiverGenerator.new(width, height, water_border_distance, _terrain)
+	_river_mesh_builder = _build_river_mesh_builder()
+	_tree_scatter = _build_tree_scatter()
+
 	for row in range(height):
 		for column in range(width):
 			var cell: HexCell = packed_hex_scene.instantiate() as HexCell
@@ -189,7 +170,7 @@ func generate_world() -> void:
 
 			var coordinate := Vector2i(column, row)
 			cell.name = "HexCell_%d_%d" % [column, row]
-			cell.current_level = _generate_weighted_cell_level(rng)
+			cell.current_level = _terrain.generate_weighted_cell_level(rng)
 			cell.cell_type = "water"
 			cell.position = _get_cell_position(coordinate)
 			add_child(cell)
@@ -200,12 +181,42 @@ func generate_world() -> void:
 	for cell: HexCell in cells.values():
 		if cell.cell_type == "forest":
 			generated_tree_count += cell.get_tree_count()
-	_generate_world_trees()
+	_tree_scatter.generate(cells, generated_tree_count)
+	_generate_rivers()
 	is_generated = true
-	_culling_time = culling_update_interval
-	_update_cell_visibility()
+	_sync_culler_config()
+	_culler.force_update(cells, _tree_scatter.get_chunks())
 	var bounds: AABB = get_world_bounds()
 	world_generated.emit(bounds.get_center(), bounds)
+
+
+func _build_river_mesh_builder() -> RiverMeshBuilder:
+	var builder := RiverMeshBuilder.new(self, HEX_HORIZONTAL_SPACING, HEX_VERTICAL_SPACING, _tree_generation_seed)
+	builder.river_width = river_width
+	builder.river_max_width = river_max_width
+	builder.river_min_points_for_scaling = river_min_points_for_scaling
+	builder.river_max_points_for_scaling = river_max_points_for_scaling
+	builder.river_source_lake_width = river_source_lake_width
+	builder.river_source_lake_length = river_source_lake_length
+	builder.river_width_variation = river_width_variation
+	builder.river_position_noise = river_position_noise
+	builder.river_noise_frequency = river_noise_frequency
+	builder.river_height_offset = river_height_offset
+	builder.river_curve_bake_interval = river_curve_bake_interval
+	builder.river_shader = river_shader
+	builder.river_material = river_material
+	return builder
+
+
+func _build_tree_scatter() -> TreeScatter:
+	var scatter := TreeScatter.new(self, HEX_HORIZONTAL_SPACING, HEX_VERTICAL_SPACING, tree_chunk_size, exact_test_tree_culling, use_fixed_test_culling)
+	scatter.tree_generation_seed = _tree_generation_seed
+	scatter.growth_finished.connect(_on_tree_growth_finished)
+	return scatter
+
+
+func _on_tree_growth_finished() -> void:
+	rebuild_tree_batches()
 
 
 func add_life(amount: int) -> void:
@@ -229,592 +240,27 @@ func spend_life(amount: int) -> bool:
 
 
 func rebuild_tree_batches(animated_cell: HexCell = null, animated_from_count: int = -1) -> void:
-	if animated_cell != null and animated_from_count >= 0:
-		if not _pending_tree_animations.has(animated_cell):
-			_pending_tree_animations[animated_cell] = animated_from_count
-
 	generated_tree_count = 0
 	for cell: HexCell in cells.values():
 		if cell.cell_type == "forest":
 			generated_tree_count += cell.get_tree_count()
 
-	_generate_world_trees(animated_cell, animated_from_count)
+	_tree_scatter.generate(cells, generated_tree_count, animated_cell, animated_from_count)
 	if enable_distance_culling:
-		_update_cell_visibility()
-
-
-func _generate_world_trees(animated_cell: HexCell = null, animated_from_count: int = -1) -> void:
-	_clear_generated_trees()
-	if generated_tree_count == 0:
-		return
-
-	var source_cell: HexCell
-	for cell: HexCell in cells.values():
-		if cell.cell_type == "forest" and not cell.tree_meshes.is_empty():
-			source_cell = cell
-			break
-
-	if source_cell == null:
-		return
-
-	var tree_mesh_data: Array[Dictionary] = []
-	for tree_index: int in range(source_cell.tree_meshes.size()):
-		var tree_root: Node3D = source_cell.tree_meshes[tree_index].instantiate() as Node3D
-		if tree_root == null:
-			continue
-
-		_collect_tree_mesh_data(tree_root, Transform3D.IDENTITY, tree_index, tree_mesh_data)
-		tree_root.free()
-
-	if tree_mesh_data.is_empty():
-		return
-
-	var transforms_by_chunk: Dictionary[Vector2i, Array] = {}
-	var generated_tree_positions: Dictionary = {}
-	var animated_tree_data: Array[Dictionary] = []
-	for coordinate: Vector2i in cells:
-		if cells[coordinate].cell_type != "forest":
-			continue
-		var chunk_coordinate := _get_tree_chunk_coordinate(coordinate)
-		if not transforms_by_chunk.has(chunk_coordinate):
-			var chunk_mesh_transforms: Array = []
-			for _mesh_data: Dictionary in tree_mesh_data:
-				chunk_mesh_transforms.append([])
-			transforms_by_chunk[chunk_coordinate] = chunk_mesh_transforms
-
-	for coordinate: Vector2i in cells:
-		var cell: HexCell = cells[coordinate]
-		if cell.cell_type != "forest":
-			continue
-		var chunk_coordinate := _get_tree_chunk_coordinate(coordinate)
-		var transforms_by_mesh: Array = transforms_by_chunk[chunk_coordinate]
-		var cell_rng := RandomNumberGenerator.new()
-		cell_rng.seed = _get_cell_tree_seed(coordinate)
-
-		var spawn_count: int = cell.get_tree_count()
-		for _tree_index in range(spawn_count):
-			var spawn_position: Vector2
-			var has_valid_position := false
-			for _attempt in range(250):
-				var candidate_position: Vector2 = _get_random_point_in_hex(cell_rng)
-				var world_position := Vector2(
-					cell.position.x + candidate_position.x,
-					cell.position.z + candidate_position.y
-				)
-				var position_bucket := Vector2i(
-					floori(world_position.x / TREE_MIN_DISTANCE),
-					floori(world_position.y / TREE_MIN_DISTANCE)
-				)
-				var is_too_close := false
-				for bucket_x in range(-1, 2):
-					for bucket_y in range(-1, 2):
-						var nearby_bucket := position_bucket + Vector2i(bucket_x, bucket_y)
-						if not generated_tree_positions.has(nearby_bucket):
-							continue
-						for generated_position: Vector2 in generated_tree_positions[nearby_bucket]:
-							if world_position.distance_squared_to(generated_position) < TREE_MIN_DISTANCE * TREE_MIN_DISTANCE:
-								is_too_close = true
-								break
-						if is_too_close:
-							break
-				if is_too_close:
-					continue
-				spawn_position = candidate_position
-				var bucket_positions: Array = generated_tree_positions.get(position_bucket, [])
-				bucket_positions.append(world_position)
-				generated_tree_positions[position_bucket] = bucket_positions
-				has_valid_position = true
-				break
-			if not has_valid_position:
-				continue
-
-			var variant_index: int = cell_rng.rand_weighted([0.725, 0.225, 0.05])
-			var tree_scale: float = 1 + cell_rng.randf_range(1, 1.15)
-			tree_scale *= TREE_SCALE_MULTIPLIER
-			var tree_transform := Transform3D(
-				Basis(Vector3.UP, cell_rng.randf_range(0.0, TAU)).scaled(Vector3.ONE * tree_scale),
-				cell.position + Vector3(spawn_position.x, 0.05, spawn_position.y)
-			)
-
-			var pending_from_count: int = _pending_tree_animations.get(cell, -1)
-			var is_pending_tree := pending_from_count >= 0 and _tree_index >= pending_from_count
-			var animate_tree := cell == animated_cell and is_pending_tree
-			if animate_tree:
-				animated_tree_data.append({
-					"tree_transform": tree_transform,
-					"tree_scene": cell.tree_meshes[variant_index]
-				})
-			for mesh_index: int in range(tree_mesh_data.size()):
-				if tree_mesh_data[mesh_index]["tree_index"] == variant_index:
-					var base_transform: Transform3D = tree_mesh_data[mesh_index]["transform"]
-					if not is_pending_tree:
-						transforms_by_mesh[mesh_index].append(tree_transform * base_transform)
-	_generated_tree_root = Node3D.new()
-	_generated_tree_root.name = "GeneratedTrees"
-	add_child(_generated_tree_root)
-
-	for chunk_coordinate: Vector2i in transforms_by_chunk:
-		var chunk_mesh_transforms: Array = transforms_by_chunk[chunk_coordinate]
-		var chunk_root := Node3D.new()
-		chunk_root.name = "TreeChunk_%d_%d" % [chunk_coordinate.x, chunk_coordinate.y]
-		chunk_root.position = _get_chunk_center(chunk_coordinate)
-		_generated_tree_root.add_child(chunk_root)
-		_generated_tree_chunks[chunk_coordinate] = chunk_root
-
-		for mesh_index: int in range(tree_mesh_data.size()):
-			var transforms: Array = chunk_mesh_transforms[mesh_index]
-			if transforms.is_empty():
-				continue
-
-			var multimesh := MultiMesh.new()
-			multimesh.transform_format = MultiMesh.TRANSFORM_3D
-			multimesh.mesh = tree_mesh_data[mesh_index]["mesh"]
-			multimesh.instance_count = transforms.size()
-			for instance_index: int in range(transforms.size()):
-				var local_transform: Transform3D = transforms[instance_index]
-				local_transform.origin -= chunk_root.position
-				multimesh.set_instance_transform(instance_index, local_transform)
-
-			var multimesh_instance := MultiMeshInstance3D.new()
-			multimesh_instance.multimesh = multimesh
-			chunk_root.add_child(multimesh_instance)
-
-	_animate_new_trees(animated_tree_data)
-
-
-func _animate_new_trees(tree_data: Array[Dictionary]) -> void:
-	if tree_data.is_empty():
-		return
-
-	if _tree_growth_root == null:
-		_tree_growth_root = Node3D.new()
-		_tree_growth_root.name = "GrowingTrees"
-		add_child(_tree_growth_root)
-
-	_active_tree_growth_tweens += tree_data.size()
-	for data: Dictionary in tree_data:
-		var tree_root: Node3D = data["tree_scene"].instantiate() as Node3D
-		if tree_root == null:
-			_active_tree_growth_tweens -= 1
-			continue
-
-		tree_root.transform = data["tree_transform"]
-		var final_scale := tree_root.scale
-		tree_root.scale = Vector3.ZERO
-		_tree_growth_root.add_child(tree_root)
-
-		var tween := create_tween()
-		tween.set_trans(Tween.TRANS_QUAD)
-		tween.set_ease(Tween.EASE_OUT)
-		tween.tween_property(tree_root, "scale", final_scale, 0.6)
-		tween.finished.connect(_on_tree_growth_tween_finished)
-
-func _on_tree_growth_tween_finished() -> void:
-	_active_tree_growth_tweens -= 1
-	if _active_tree_growth_tweens == 0:
-		_pending_tree_animations.clear()
-		_clear_tree_growth()
-		rebuild_tree_batches()
-
-
-func _get_cell_tree_seed(coordinate: Vector2i) -> int:
-	return _tree_generation_seed + coordinate.x * 73856093 + coordinate.y * 19349663
-
-
-func _get_chunk_center(chunk_coordinate: Vector2i) -> Vector3:
-	if exact_test_tree_culling and use_fixed_test_culling:
-		return _get_cell_position(chunk_coordinate)
-
-	var center_coordinate := Vector2i(
-		chunk_coordinate.x * tree_chunk_size + tree_chunk_size / 2,
-		chunk_coordinate.y * tree_chunk_size + tree_chunk_size / 2
-	)
-	return _get_cell_position(center_coordinate)
-
-
-func _get_tree_chunk_coordinate(coordinate: Vector2i) -> Vector2i:
-	if exact_test_tree_culling and use_fixed_test_culling:
-		return coordinate
-
-	return Vector2i(
-		floori(coordinate.x / tree_chunk_size),
-		floori(coordinate.y / tree_chunk_size)
-	)
-
-
-func _collect_tree_mesh_data(
-	node: Node,
-	parent_transform: Transform3D,
-	tree_index: int,
-	result: Array[Dictionary]
-) -> void:
-	var node_transform: Transform3D = parent_transform
-	if node is Node3D:
-		node_transform = parent_transform * (node as Node3D).transform
-
-	if node is MeshInstance3D:
-		var mesh_instance: MeshInstance3D = node as MeshInstance3D
-		if mesh_instance.mesh != null:
-			var mesh: Mesh = mesh_instance.mesh
-			var material_overrides: Array[Material] = []
-			for surface_index: int in range(mesh.get_surface_count()):
-				var material: Material = mesh_instance.get_surface_override_material(surface_index)
-				if material != null:
-					material_overrides.append(material)
-				else:
-					material_overrides.append(null)
-
-			if material_overrides.any(func(material: Material) -> bool:
-				return material != null
-			):
-				var mesh_copy: Mesh = mesh.duplicate()
-				for surface_index: int in range(mini(mesh_copy.get_surface_count(), material_overrides.size())):
-					if material_overrides[surface_index] != null:
-						mesh_copy.surface_set_material(surface_index, material_overrides[surface_index])
-				mesh = mesh_copy
-
-			result.append({
-				"mesh": mesh,
-				"transform": node_transform,
-				"tree_index": tree_index
-			})
-
-	for child: Node in node.get_children():
-		_collect_tree_mesh_data(child, node_transform, tree_index, result)
-
-
-func _get_random_point_in_hex(rng: RandomNumberGenerator) -> Vector2:
-	for _attempt in range(50):
-		var angle: float = rng.randf_range(0.0, TAU)
-		var distance: float = rng.randf_range(0.0, 1.0)
-		var point := Vector2(cos(angle) * distance, sin(angle) * distance)
-		if _is_point_in_hexagon(point):
-			return point
-
-	return Vector2.ZERO
-
-
-func _is_point_in_hexagon(point: Vector2) -> bool:
-	var vertices: Array[Vector2] = []
-	for index in range(6):
-		var angle: float = deg_to_rad(index * 60.0)
-		vertices.append(Vector2(cos(angle), sin(angle)))
-
-	for index in range(6):
-		var p1: Vector2 = vertices[index]
-		var p2: Vector2 = vertices[(index + 1) % 6]
-		if (p2 - p1).cross(point - p1) < 0.0:
-			return false
-
-	return true
-
-
-func _update_cell_visibility() -> void:
-	var camera_controller: Node3D = get_node_or_null(culling_camera_path) as Node3D
-	if camera_controller == null:
-		return
-
-	var camera_target: Node3D = get_node_or_null(culling_target_path) as Node3D
-	if camera_target == null:
-		return
-
-	var phantom_camera: Node = camera_controller.get_node_or_null("PhantomCamera3D")
-	var culling_distance: float
-	if use_fixed_test_culling:
-		culling_distance = fixed_test_culling_distance
-	else:
-		if phantom_camera == null:
-			return
-		var zoom_distance: float = phantom_camera.get("spring_length")
-		culling_distance = zoom_distance * culling_zoom_multiplier + culling_distance_offset
-	var target_position: Vector3 = camera_target.global_position
-	var culling_distance_squared: float = culling_distance * culling_distance
-
-	for cell: HexCell in cells.values():
-		var cell_position: Vector3 = cell.global_position
-		var horizontal_offset := Vector2(
-			cell_position.x - target_position.x,
-			cell_position.z - target_position.z
-		)
-		_set_cell_visible(cell, horizontal_offset.length_squared() < culling_distance_squared)
-
-	for chunk_coordinate: Vector2i in _generated_tree_chunks:
-		var chunk: Node3D = _generated_tree_chunks[chunk_coordinate]
-		var chunk_offset := Vector2(
-			chunk.global_position.x - target_position.x,
-			chunk.global_position.z - target_position.z
-		)
-		var chunk_is_visible: bool = chunk_offset.length_squared() < culling_distance_squared
-		_set_tree_chunk_visible(chunk, chunk_is_visible)
-		_update_tree_chunk_lod(chunk, phantom_camera, chunk_is_visible)
-
-
-func _set_cell_visible(cell: HexCell, is_visible: bool) -> void:
-	var water_mesh: Node3D = cell.get_node_or_null("WaterShader") as Node3D
-	var grass_mesh: Node3D = cell.get_node_or_null("GrassShader") as Node3D
-	var river_mesh: Node3D = cell.get_node_or_null("RiverShader") as Node3D
-	if water_mesh != null:
-		_set_visual_descendants_visible(water_mesh, is_visible and cell.cell_type == "water")
-	if grass_mesh != null:
-		_set_visual_descendants_visible(grass_mesh, is_visible and (cell.cell_type == "forest" or cell.cell_type == "river"))
-	if river_mesh != null:
-		_set_visual_descendants_visible(river_mesh, is_visible and cell.cell_type == "river")
-
-
-func _set_tree_chunk_visible(chunk: Node3D, is_visible: bool) -> void:
-	for child: Node in chunk.get_children():
-		_set_visual_descendants_visible(child, is_visible)
-
-
-func _update_tree_chunk_lod(chunk: Node3D, phantom_camera: Node, chunk_is_visible: bool) -> void:
-	var lod_ratio: float = 1.0
-	if enable_tree_lod and phantom_camera != null:
-		var zoom_distance: float = phantom_camera.get("spring_length")
-		var zoom_range: float = maxf(0.001, tree_lod_end_zoom - tree_lod_start_zoom)
-		lod_ratio = clampf(
-			1.0 - (zoom_distance - tree_lod_start_zoom) / zoom_range,
-			tree_lod_min_ratio,
-			1.0
-		)
-
-	for child: Node in chunk.get_children():
-		_set_multimesh_lod(child, lod_ratio, chunk_is_visible)
-
-
-func _set_multimesh_lod(node: Node, lod_ratio: float, chunk_is_visible: bool) -> void:
-	if node is MultiMeshInstance3D:
-		var multimesh_instance: MultiMeshInstance3D = node as MultiMeshInstance3D
-		multimesh_instance.visible = chunk_is_visible and (not enable_tree_lod or lod_ratio >= 0.5)
-
-	for child: Node in node.get_children():
-		_set_multimesh_lod(child, lod_ratio, chunk_is_visible)
-
-
-func _set_visual_descendants_visible(node: Node, is_visible: bool) -> void:
-	if node is VisualInstance3D:
-		(node as VisualInstance3D).visible = is_visible
-	for child: Node in node.get_children():
-		_set_visual_descendants_visible(child, is_visible)
+		_sync_culler_config()
+		_culler.force_update(cells, _tree_scatter.get_chunks())
 
 
 func _generate_island_terrain(rng: RandomNumberGenerator) -> void:
-	for coordinate: Vector2i in cells:
-		var cell: HexCell = cells[coordinate]
-		cell.cell_type = "water" if _is_water_border(coordinate) else "forest"
-		cell.populate_cell()
-
-	var river_count: int = maxi(1, roundi(float(width * height) / 350.0))
-	var river_sources: Array[Vector2i] = []
-	for river_index in range(river_count):
-		var source := _get_river_source(rng, river_sources)
-		river_sources.append(source)
-		_generate_river_path(source, river_index % 4, rng)
-
-	_convert_overwhelmed_rivers_to_water()
-
+	_terrain.assign_base_terrain(cells)
+	_river_generator.carve_rivers(cells, rng)
 	for cell: HexCell in cells.values():
 		cell.populate_cell()
 
 
-func _generate_river_path(start: Vector2i, target_side: int, rng: RandomNumberGenerator) -> void:
-	var current := start
-	var previous_direction := Vector2i.ZERO
-	var visited: Dictionary[Vector2i, bool] = {}
-	var max_steps: int = maxi(1, width + height)
-
-	for _step in range(max_steps):
-		if _is_water_border(current):
-			return
-
-		var cell: HexCell = cells.get(current) as HexCell
-		if cell == null:
-			return
-		cell.cell_type = "river"
-		visited[current] = true
-		if _get_distance_to_target_side(current, target_side) <= water_border_distance + 1:
-			return
-
-		var next_coordinate := _get_next_river_coordinate(
-			current,
-			target_side,
-			previous_direction,
-			visited,
-			rng
-		)
-		if next_coordinate == current:
-			return
-		previous_direction = next_coordinate - current
-		current = next_coordinate
-
-
-func _get_river_source(rng: RandomNumberGenerator, existing_sources: Array[Vector2i]) -> Vector2i:
-	var center := Vector2((width - 1) * 0.5, (height - 1) * 0.5)
-	var source_radius := Vector2(
-		maxf(1.0, (width - water_border_distance * 2) * 0.2),
-		maxf(1.0, (height - water_border_distance * 2) * 0.2)
-	)
-	var minimum_spacing := maxf(2.0, mini(width, height) * 0.12)
-	var best_source := Vector2i(roundi(center.x), roundi(center.y))
-	var best_score := -INF
-
-	for _attempt in range(40):
-		var candidate := Vector2i(
-			clampi(roundi(center.x + rng.randf_range(-source_radius.x, source_radius.x)), 0, width - 1),
-			clampi(roundi(center.y + rng.randf_range(-source_radius.y, source_radius.y)), 0, height - 1)
-		)
-		if _is_water_border(candidate):
-			continue
-		if (cells[candidate] as HexCell).cell_type != "forest":
-			continue
-
-		var spacing_score := INF
-		for existing_source: Vector2i in existing_sources:
-			spacing_score = minf(spacing_score, Vector2(candidate).distance_to(Vector2(existing_source)))
-		if existing_sources.is_empty():
-			spacing_score = source_radius.length()
-		if spacing_score < minimum_spacing and best_score >= minimum_spacing:
-			continue
-		if spacing_score > best_score:
-			best_score = spacing_score
-			best_source = candidate
-
-	return best_source
-
-
-func _get_next_river_coordinate(
-	coordinate: Vector2i,
-	target_side: int,
-	previous_direction: Vector2i,
-	visited: Dictionary[Vector2i, bool],
-	rng: RandomNumberGenerator
-) -> Vector2i:
-	var best_coordinate := coordinate
-	var best_score := INF
-	var neighbor_offsets: Dictionary[StringName, Vector2i] = _get_neighbor_offsets(coordinate.x)
-	for neighbor_offset: Vector2i in neighbor_offsets.values():
-		var candidate := coordinate + neighbor_offset
-		if not cells.has(candidate) or _is_water_border(candidate) or visited.has(candidate):
-			continue
-
-		var distance_to_edge: float
-		match target_side:
-			0:
-				distance_to_edge = candidate.x
-			1:
-				distance_to_edge = width - 1 - candidate.x
-			2:
-				distance_to_edge = candidate.y
-			_:
-				distance_to_edge = height - 1 - candidate.y
-
-		var score: float = distance_to_edge * 0.65 + rng.randf_range(0.0, 1.2)
-		if previous_direction != Vector2i.ZERO:
-			var direction := Vector2(candidate - coordinate).normalized()
-			var last_direction := Vector2(previous_direction).normalized()
-			var direction_change := 1.0 - direction.dot(last_direction)
-			score += direction_change * 0.1
-		if (cells[candidate] as HexCell).cell_type == "river":
-			score += 3.0
-		if score < best_score:
-			best_score = score
-			best_coordinate = candidate
-
-	return best_coordinate
-
-
-func _get_distance_to_target_side(coordinate: Vector2i, target_side: int) -> int:
-	match target_side:
-		0:
-			return coordinate.x
-		1:
-			return width - 1 - coordinate.x
-		2:
-			return coordinate.y
-		_:
-			return height - 1 - coordinate.y
-
-
-func _is_water_border(coordinate: Vector2i) -> bool:
-	var distance_from_border: int = mini(
-		mini(coordinate.x, width - 1 - coordinate.x),
-		mini(coordinate.y, height - 1 - coordinate.y)
-	)
-	if distance_from_border <= water_border_distance:
-		return true
-
-	var side_distances: Array[int] = [
-		coordinate.x,
-		width - 1 - coordinate.x,
-		coordinate.y,
-		height - 1 - coordinate.y
-	]
-	for side: int in range(side_distances.size()):
-		var bay_depth := _get_coastline_bay_depth(_get_coastline_coordinate(coordinate, side), side)
-		if side_distances[side] <= water_border_distance + bay_depth:
-			return true
-
-	return false
-
-
-func _get_coastline_coordinate(coordinate: Vector2i, side: int) -> int:
-	if side < 2:
-		return coordinate.y
-	return coordinate.x
-
-
-func _get_coastline_bay_depth(along: int, side: int) -> int:
-	if coastline_bay_depth == 0:
-		return 0
-
-	var seed_offset := float((_tree_generation_seed % 1000) + side * 173)
-	var wave_position := float(along) * coastline_bay_frequency + seed_offset * 0.01
-	var wave := (sin(wave_position) + sin(wave_position * 0.47 + 1.8)) * 0.5
-	if wave <= 0.25:
-		return 0
-
-	var normalized_depth := clampf((wave - 0.25) / 0.75, 0.0, 1.0)
-	var depth_variation := _get_coastline_depth_variation(along, side)
-	var varied_bay_depth: int = maxi(0, coastline_bay_depth + depth_variation)
-	return roundi(normalized_depth * varied_bay_depth)
-
-
-func _get_coastline_depth_variation(along: int, side: int) -> int:
-	var segment := floori(float(along) / 4.0)
-	var random_value := sin(
-		segment * 12.9898 + float(side) * 78.233 + float(_tree_generation_seed % 10000) * 0.017
-	) * 43758.5453
-	var normalized_value := random_value - floorf(random_value)
-	return roundi(normalized_value * 4.0 - 2.0)
-
-
-func _convert_overwhelmed_rivers_to_water() -> void:
-	var has_converted_cells := true
-	while has_converted_cells:
-		has_converted_cells = false
-		var cells_to_convert: Array[HexCell] = []
-		for coordinate: Vector2i in cells:
-			var cell: HexCell = cells[coordinate]
-			if cell.cell_type != "river":
-				continue
-
-			var river_neighbors := 0
-			var water_neighbors := 0
-			var neighbor_offsets: Dictionary[StringName, Vector2i] = _get_neighbor_offsets(coordinate.x)
-			for neighbor_offset: Vector2i in neighbor_offsets.values():
-				var neighboring_cell: HexCell = cells.get(coordinate + neighbor_offset) as HexCell
-				if neighboring_cell == null:
-					continue
-				if neighboring_cell.cell_type == "river":
-					river_neighbors += 1
-				elif neighboring_cell.cell_type == "water":
-					water_neighbors += 1
-
-			if river_neighbors >= 3 or water_neighbors >= 2:
-				cells_to_convert.append(cell)
-
-		for cell: HexCell in cells_to_convert:
-			cell.cell_type = "water"
-			has_converted_cells = true
+func _generate_rivers() -> void:
+	var chains: Array[Array] = _river_generator.trace_river_chains(cells)
+	_river_mesh_builder.rebuild(cells, chains)
 
 
 func get_cell(coordinate: Vector2i) -> HexCell:
@@ -848,48 +294,24 @@ func get_world_bounds() -> AABB:
 
 
 func _get_cell_position(coordinate: Vector2i) -> Vector3:
-	return Vector3(
-		coordinate.x * HEX_HORIZONTAL_SPACING,
-		0.0,
-		coordinate.y * HEX_VERTICAL_SPACING + (coordinate.x % 2) * HEX_VERTICAL_SPACING / 2.0
-	)
+	return HexGrid.offset_to_world(coordinate, HEX_HORIZONTAL_SPACING, HEX_VERTICAL_SPACING)
 
 
 func _assign_neighbors() -> void:
 	for coordinate: Vector2i in cells:
 		var cell: HexCell = cells[coordinate]
-		var neighbor_offsets: Dictionary[StringName, Vector2i] = _get_neighbor_offsets(coordinate.x)
-		for direction: StringName in neighbor_offsets:
-			var neighbor_coordinate: Vector2i = coordinate + neighbor_offsets[direction]
-			cell.neigboring_cells[direction] = cells.get(neighbor_coordinate) as HexCell
-
-
-func _get_neighbor_offsets(column: int) -> Dictionary[StringName, Vector2i]:
-	return EVEN_COLUMN_NEIGHBOR_OFFSETS if column % 2 == 0 else ODD_COLUMN_NEIGHBOR_OFFSETS
+		var neighbors: Dictionary[HexGrid.Direction, Vector2i] = HexGrid.get_all_neighbors(coordinate)
+		for direction: HexGrid.Direction in neighbors:
+			cell.neigboring_cells[HexGrid.direction_name(direction)] = cells.get(neighbors[direction]) as HexCell
 
 
 func _clear_cells() -> void:
-	_clear_generated_trees()
-	_clear_tree_growth()
-	for assignment: Dictionary in _level_progress_assignments.values():
-		var viewport: SubViewport = assignment["viewport"]
-		viewport.render_target_update_mode = SubViewport.UPDATE_DISABLED
-		_available_level_progress_viewports.append(viewport)
-	_level_progress_assignments.clear()
+	if _tree_scatter != null:
+		_tree_scatter.clear_all()
+	if _river_mesh_builder != null:
+		_river_mesh_builder.clear()
+	if _level_progress_pool != null:
+		_level_progress_pool.reset_assignments()
 	for child: Node in get_children():
 		if child is HexCell:
 			child.free()
-
-
-func _clear_generated_trees() -> void:
-	if is_instance_valid(_generated_tree_root):
-		_generated_tree_root.free()
-	_generated_tree_root = null
-	_generated_tree_chunks.clear()
-
-
-func _clear_tree_growth() -> void:
-	if is_instance_valid(_tree_growth_root):
-		_tree_growth_root.free()
-	_tree_growth_root = null
-	_active_tree_growth_tweens = 0
