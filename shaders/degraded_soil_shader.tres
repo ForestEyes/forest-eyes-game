@@ -1,0 +1,381 @@
+[gd_resource type="VisualShader" format=3 uid="uid://b4jqadvkjlsi"]
+
+[sub_resource type="VisualShaderNodeFloatConstant" id="VisualShaderNodeFloatConstant_4iwix"]
+constant = 3.0
+
+[sub_resource type="VisualShaderNodeFloatConstant" id="VisualShaderNodeFloatConstant_05ghu"]
+constant = 3.0
+
+[sub_resource type="VisualShaderNodeFloatConstant" id="VisualShaderNodeFloatConstant_deurl"]
+constant = 0.7
+
+[sub_resource type="VisualShaderNodeFloatConstant" id="VisualShaderNodeFloatConstant_6xygr"]
+constant = 0.4
+
+[sub_resource type="VisualShaderNodeExpression" id="VisualShaderNodeExpression_gtvyx"]
+output_port_for_preview = 0
+size = Vector2(1160, 1580)
+expression = "uv *= scale;
+
+vec2 index_uv = floor(vec2(uv.x * columns, uv.y * rows));
+vec2 fract_uv = fract(vec2(uv.x * columns, uv.y * rows));
+
+float minimum_dist = 1.0;
+float second_minimum_dist = 1.0;
+
+for (int y= -1; y <= 1; y++) {
+	for (int x= -1; x <= 1; x++) {
+		vec2 neighbor = vec2(float(x),float(y));
+		vec2 frac_uv = index_uv + neighbor;
+		vec2 point = vec2(fract(sin(dot(frac_uv.xy,vec2(12.9898,78.233))) * 43758.5453123));
+		float time = TIME * speed;
+		point = vec2( cos(time * point.x * speed), sin(time * point.y * speed) ) * 0.5 + 0.5;
+
+		vec2 diff = neighbor + point - fract_uv;
+		float dist = length(diff);
+		
+		if (dist < minimum_dist) {
+			if (minimum_dist == 1.0) {
+				minimum_dist = dist;
+			}
+			else {
+				second_minimum_dist = minimum_dist;
+				minimum_dist = dist;
+			}
+		}
+	}
+}
+
+line = second_minimum_dist - minimum_dist;"
+
+[sub_resource type="VisualShaderNodeStep" id="VisualShaderNodeStep_mlgkf"]
+output_port_for_preview = 0
+default_input_values = [0, 0.1, 1, -0.815]
+
+[sub_resource type="VisualShaderNodeFloatOp" id="VisualShaderNodeFloatOp_kartl"]
+output_port_for_preview = 0
+default_input_values = [0, 1.0, 1, 0.0]
+operator = 1
+
+[sub_resource type="VisualShaderNodeFloatConstant" id="VisualShaderNodeFloatConstant_38ucx"]
+constant = 100.0
+
+[sub_resource type="VisualShaderNodeMix" id="VisualShaderNodeMix_viu2c"]
+default_input_values = [0, Vector3(0, 0, 0), 1, Vector3(1, 1, 1), 2, Vector3(0.5, 0.5, 0.5)]
+op_type = 3
+
+[sub_resource type="VisualShaderNodeColorParameter" id="VisualShaderNodeColorParameter_tupte"]
+parameter_name = "DirtColorCracks"
+default_value_enabled = true
+default_value = Color(0.24820459, 0.057584748, 0.0163726, 1)
+
+[sub_resource type="VisualShaderNodeVectorOp" id="VisualShaderNodeVectorOp_qowu6"]
+default_input_values = [0, Vector2(0, 0), 1, Vector2(0, 0)]
+op_type = 0
+operator = 2
+
+[sub_resource type="VisualShaderNodeFloatConstant" id="VisualShaderNodeFloatConstant_35ni0"]
+constant = 5.0
+
+[sub_resource type="VisualShaderNodeFloatOp" id="VisualShaderNodeFloatOp_3rb22"]
+operator = 2
+
+[sub_resource type="VisualShaderNodeFloatOp" id="VisualShaderNodeFloatOp_6b8xp"]
+default_input_values = [0, 0.0, 1, 2.0]
+operator = 5
+
+[sub_resource type="VisualShaderNodeFloatParameter" id="VisualShaderNodeFloatParameter_3rb22"]
+parameter_name = "Scale"
+hint = 1
+max = 2.0
+default_value_enabled = true
+default_value = 1.0
+
+[sub_resource type="VisualShaderNodeMix" id="VisualShaderNodeMix_kofwk"]
+output_port_for_preview = 0
+default_input_values = [0, Vector3(0, 0, 0), 1, Vector3(1, 1, 1), 2, Vector3(0.5, 0.5, 0.5)]
+op_type = 3
+
+[sub_resource type="VisualShaderNodeColorParameter" id="VisualShaderNodeColorParameter_j8hiu"]
+parameter_name = "DirtColor1"
+default_value_enabled = true
+default_value = Color(0.3137255, 0.08627451, 0.05490196, 1)
+
+[sub_resource type="VisualShaderNodeColorParameter" id="VisualShaderNodeColorParameter_7og6c"]
+parameter_name = "DirtColor2"
+default_value_enabled = true
+default_value = Color(0.45283157, 0.250077, 0.15766233, 1)
+
+[sub_resource type="VisualShaderNodeFloatConstant" id="VisualShaderNodeFloatConstant_kofwk"]
+constant = 3.0
+
+[sub_resource type="VisualShaderNodeFloatConstant" id="VisualShaderNodeFloatConstant_7og6c"]
+constant = 0.8
+
+[sub_resource type="VisualShaderNodeFloatConstant" id="VisualShaderNodeFloatConstant_xa27w"]
+constant = 3.0
+
+[sub_resource type="VisualShaderNodeVectorDecompose" id="VisualShaderNodeVectorDecompose_4iwix"]
+output_port_for_preview = 0
+default_input_values = [0, Vector2(0, 0)]
+op_type = 0
+
+[sub_resource type="VisualShaderNodeFloatConstant" id="VisualShaderNodeFloatConstant_rrxks"]
+constant = 3.0
+
+[sub_resource type="VisualShaderNodeFloatConstant" id="VisualShaderNodeFloatConstant_xhifj"]
+constant = 0.4
+
+[sub_resource type="VisualShaderNodeFloatConstant" id="VisualShaderNodeFloatConstant_omyib"]
+constant = 3.0
+
+[sub_resource type="VisualShaderNodeVectorDecompose" id="VisualShaderNodeVectorDecompose_05ghu"]
+output_port_for_preview = 0
+default_input_values = [0, Vector2(0, 0)]
+op_type = 0
+
+[sub_resource type="VisualShaderNodeInput" id="VisualShaderNodeInput_blcli"]
+input_name = "inv_view_matrix"
+
+[sub_resource type="VisualShaderNodeTransformVecMult" id="VisualShaderNodeTransformVecMult_deurl"]
+expanded_output_ports = [0]
+
+[sub_resource type="VisualShaderNodeInput" id="VisualShaderNodeInput_6xygr"]
+input_name = "vertex"
+
+[sub_resource type="VisualShaderNodeVectorCompose" id="VisualShaderNodeVectorCompose_gtvyx"]
+op_type = 0
+
+[sub_resource type="VisualShaderNodeExpression" id="VisualShaderNodeExpression_kartl"]
+output_port_for_preview = 0
+size = Vector2(919.99994, 1100)
+expression = "uv *= scale;
+
+vec2 index_uv = floor(vec2(uv.x * columns, uv.y * rows));
+vec2 fract_uv = fract(vec2(uv.x * columns, uv.y * rows));
+
+float minimum_dist = 1.0;
+
+for (int y= -1; y <= 1; y++) {
+	for (int x= -1; x <= 1; x++) {
+		vec2 neighbor = vec2(float(x),float(y));
+		vec2 frac_uv = index_uv + neighbor;
+		vec2 point = vec2(fract(sin(dot(frac_uv.xy,vec2(12.9898,78.233))) * 43758.5453123));
+		
+		vec2 diff = neighbor + point - fract_uv;
+		float dist = length(diff);
+		
+		if(dist < minimum_dist) {
+			minimum_dist = dist;
+			minimum_point = point;
+		}
+	}
+}"
+
+[sub_resource type="VisualShaderNodeExpression" id="VisualShaderNodeExpression_38ucx"]
+output_port_for_preview = 0
+size = Vector2(919.99994, 1100)
+expression = "uv *= scale;
+
+vec2 index_uv = floor(vec2(uv.x * columns, uv.y * rows));
+vec2 fract_uv = fract(vec2(uv.x * columns, uv.y * rows));
+
+float minimum_dist = 1.0;
+
+for (int y= -1; y <= 1; y++) {
+	for (int x= -1; x <= 1; x++) {
+		vec2 neighbor = vec2(float(x),float(y));
+		vec2 frac_uv = index_uv + neighbor;
+		vec2 point = vec2(fract(sin(dot(frac_uv.xy,vec2(12.9898,78.233))) * 43758.5453123));
+		
+		vec2 diff = neighbor + point - fract_uv;
+		float dist = length(diff);
+		
+		if(dist < minimum_dist) {
+			minimum_dist = dist;
+			minimum_point = point;
+		}
+	}
+}"
+
+[sub_resource type="VisualShaderNodeMultiplyAdd" id="VisualShaderNodeMultiplyAdd_viu2c"]
+output_port_for_preview = 0
+default_input_values = [0, 0.0, 1, 0.5, 2, 0.0]
+
+[sub_resource type="VisualShaderNodeMultiplyAdd" id="VisualShaderNodeMultiplyAdd_tupte"]
+default_input_values = [0, Vector2(0, 0), 1, Vector2(1, 1), 2, Vector2(0, 0)]
+op_type = 1
+
+[sub_resource type="VisualShaderNodeFloatConstant" id="VisualShaderNodeFloatConstant_qowu6"]
+constant = 10.0
+
+[sub_resource type="VisualShaderNodeFloatParameter" id="VisualShaderNodeFloatParameter_6b8xp"]
+parameter_name = "Cracks"
+hint = 1
+step = 0.067
+
+[sub_resource type="VisualShaderNodeInput" id="VisualShaderNodeInput_nmvo8"]
+input_name = "vertex"
+
+[resource]
+nodes/vertex/2/node = SubResource("VisualShaderNodeInput_nmvo8")
+nodes/vertex/2/position = Vector2(-384, 128)
+nodes/fragment/0/position = Vector2(848, 1632)
+nodes/fragment/43/node = SubResource("VisualShaderNodeFloatParameter_3rb22")
+nodes/fragment/43/position = Vector2(-5312, 1312)
+nodes/fragment/66/node = SubResource("VisualShaderNodeMix_kofwk")
+nodes/fragment/66/position = Vector2(-320, 1280)
+nodes/fragment/67/node = SubResource("VisualShaderNodeColorParameter_j8hiu")
+nodes/fragment/67/position = Vector2(-704, 944)
+nodes/fragment/68/node = SubResource("VisualShaderNodeColorParameter_7og6c")
+nodes/fragment/68/position = Vector2(-704, 1184)
+nodes/fragment/71/node = SubResource("VisualShaderNodeFloatConstant_kofwk")
+nodes/fragment/71/position = Vector2(-3216, 864)
+nodes/fragment/72/node = SubResource("VisualShaderNodeFloatConstant_7og6c")
+nodes/fragment/72/position = Vector2(-3216, 976)
+nodes/fragment/73/node = SubResource("VisualShaderNodeFloatConstant_xa27w")
+nodes/fragment/73/position = Vector2(-3216, 752)
+nodes/fragment/74/node = SubResource("VisualShaderNodeVectorDecompose_4iwix")
+nodes/fragment/74/position = Vector2(-2096, 640)
+nodes/fragment/75/node = SubResource("VisualShaderNodeFloatConstant_rrxks")
+nodes/fragment/75/position = Vector2(-3216, 1936)
+nodes/fragment/76/node = SubResource("VisualShaderNodeFloatConstant_xhifj")
+nodes/fragment/76/position = Vector2(-3216, 2032)
+nodes/fragment/77/node = SubResource("VisualShaderNodeFloatConstant_omyib")
+nodes/fragment/77/position = Vector2(-3216, 1824)
+nodes/fragment/78/node = SubResource("VisualShaderNodeVectorDecompose_05ghu")
+nodes/fragment/78/position = Vector2(-2096, 1712)
+nodes/fragment/79/node = SubResource("VisualShaderNodeInput_blcli")
+nodes/fragment/79/position = Vector2(-6000, 1792)
+nodes/fragment/80/node = SubResource("VisualShaderNodeTransformVecMult_deurl")
+nodes/fragment/80/position = Vector2(-5680, 1792)
+nodes/fragment/81/node = SubResource("VisualShaderNodeInput_6xygr")
+nodes/fragment/81/position = Vector2(-6048, 1904)
+nodes/fragment/82/node = SubResource("VisualShaderNodeVectorCompose_gtvyx")
+nodes/fragment/82/position = Vector2(-5408, 1824)
+nodes/fragment/85/node = SubResource("VisualShaderNodeExpression_kartl")
+nodes/fragment/85/position = Vector2(-2912, 624)
+nodes/fragment/85/size = Vector2(919.99994, 1100)
+nodes/fragment/85/input_ports = "0,3,uv;1,0,columns;2,0,rows;3,0,scale;"
+nodes/fragment/85/output_ports = "0,3,minimum_point;"
+nodes/fragment/85/expression = "uv *= scale;
+
+vec2 index_uv = floor(vec2(uv.x * columns, uv.y * rows));
+vec2 fract_uv = fract(vec2(uv.x * columns, uv.y * rows));
+
+float minimum_dist = 1.0;
+
+for (int y= -1; y <= 1; y++) {
+	for (int x= -1; x <= 1; x++) {
+		vec2 neighbor = vec2(float(x),float(y));
+		vec2 frac_uv = index_uv + neighbor;
+		vec2 point = vec2(fract(sin(dot(frac_uv.xy,vec2(12.9898,78.233))) * 43758.5453123));
+		
+		vec2 diff = neighbor + point - fract_uv;
+		float dist = length(diff);
+		
+		if(dist < minimum_dist) {
+			minimum_dist = dist;
+			minimum_point = point;
+		}
+	}
+}"
+nodes/fragment/86/node = SubResource("VisualShaderNodeExpression_38ucx")
+nodes/fragment/86/position = Vector2(-2912, 1696)
+nodes/fragment/86/size = Vector2(919.99994, 1100)
+nodes/fragment/86/input_ports = "0,3,uv;1,0,columns;2,0,rows;3,0,scale;"
+nodes/fragment/86/output_ports = "0,3,minimum_point;"
+nodes/fragment/86/expression = "uv *= scale;
+
+vec2 index_uv = floor(vec2(uv.x * columns, uv.y * rows));
+vec2 fract_uv = fract(vec2(uv.x * columns, uv.y * rows));
+
+float minimum_dist = 1.0;
+
+for (int y= -1; y <= 1; y++) {
+	for (int x= -1; x <= 1; x++) {
+		vec2 neighbor = vec2(float(x),float(y));
+		vec2 frac_uv = index_uv + neighbor;
+		vec2 point = vec2(fract(sin(dot(frac_uv.xy,vec2(12.9898,78.233))) * 43758.5453123));
+		
+		vec2 diff = neighbor + point - fract_uv;
+		float dist = length(diff);
+		
+		if(dist < minimum_dist) {
+			minimum_dist = dist;
+			minimum_point = point;
+		}
+	}
+}"
+nodes/fragment/87/node = SubResource("VisualShaderNodeMultiplyAdd_viu2c")
+nodes/fragment/87/position = Vector2(-1728, 1056)
+nodes/fragment/88/node = SubResource("VisualShaderNodeMultiplyAdd_tupte")
+nodes/fragment/88/position = Vector2(-4704, 1616)
+nodes/fragment/89/node = SubResource("VisualShaderNodeFloatConstant_qowu6")
+nodes/fragment/89/position = Vector2(-4944, 1808)
+nodes/fragment/92/node = SubResource("VisualShaderNodeFloatParameter_6b8xp")
+nodes/fragment/92/position = Vector2(-1168, 1920)
+nodes/fragment/101/node = SubResource("VisualShaderNodeFloatConstant_4iwix")
+nodes/fragment/101/position = Vector2(-3360, 2768)
+nodes/fragment/102/node = SubResource("VisualShaderNodeFloatConstant_05ghu")
+nodes/fragment/102/position = Vector2(-3360, 2880)
+nodes/fragment/103/node = SubResource("VisualShaderNodeFloatConstant_deurl")
+nodes/fragment/103/position = Vector2(-3360, 2960)
+nodes/fragment/104/node = SubResource("VisualShaderNodeFloatConstant_6xygr")
+nodes/fragment/104/position = Vector2(-3392, 3168)
+nodes/fragment/105/node = SubResource("VisualShaderNodeExpression_gtvyx")
+nodes/fragment/105/position = Vector2(-2976, 2656)
+nodes/fragment/105/size = Vector2(1160, 1580)
+nodes/fragment/105/input_ports = "0,3,uv;1,0,columns;2,0,rows;3,0,speed;4,0,TIME;5,0,scale;"
+nodes/fragment/105/output_ports = "0,0,line;"
+nodes/fragment/105/expression = "uv *= scale;
+
+vec2 index_uv = floor(vec2(uv.x * columns, uv.y * rows));
+vec2 fract_uv = fract(vec2(uv.x * columns, uv.y * rows));
+
+float minimum_dist = 1.0;
+float second_minimum_dist = 1.0;
+
+for (int y= -1; y <= 1; y++) {
+	for (int x= -1; x <= 1; x++) {
+		vec2 neighbor = vec2(float(x),float(y));
+		vec2 frac_uv = index_uv + neighbor;
+		vec2 point = vec2(fract(sin(dot(frac_uv.xy,vec2(12.9898,78.233))) * 43758.5453123));
+		float time = TIME * speed;
+		point = vec2( cos(time * point.x * speed), sin(time * point.y * speed) ) * 0.5 + 0.5;
+
+		vec2 diff = neighbor + point - fract_uv;
+		float dist = length(diff);
+		
+		if (dist < minimum_dist) {
+			if (minimum_dist == 1.0) {
+				minimum_dist = dist;
+			}
+			else {
+				second_minimum_dist = minimum_dist;
+				minimum_dist = dist;
+			}
+		}
+	}
+}
+
+line = second_minimum_dist - minimum_dist;"
+nodes/fragment/106/node = SubResource("VisualShaderNodeStep_mlgkf")
+nodes/fragment/106/position = Vector2(-1920, 2640)
+nodes/fragment/107/node = SubResource("VisualShaderNodeFloatOp_kartl")
+nodes/fragment/107/position = Vector2(-1696, 2640)
+nodes/fragment/108/node = SubResource("VisualShaderNodeFloatConstant_38ucx")
+nodes/fragment/108/position = Vector2(-3376, 3056)
+nodes/fragment/109/node = SubResource("VisualShaderNodeMix_viu2c")
+nodes/fragment/109/position = Vector2(64, 1712)
+nodes/fragment/110/node = SubResource("VisualShaderNodeColorParameter_tupte")
+nodes/fragment/110/position = Vector2(-704, 1648)
+nodes/fragment/111/node = SubResource("VisualShaderNodeVectorOp_qowu6")
+nodes/fragment/111/position = Vector2(-3696, 2432)
+nodes/fragment/112/node = SubResource("VisualShaderNodeFloatConstant_35ni0")
+nodes/fragment/112/position = Vector2(-3920, 2560)
+nodes/fragment/113/node = SubResource("VisualShaderNodeFloatOp_3rb22")
+nodes/fragment/113/position = Vector2(-720, 2064)
+nodes/fragment/115/node = SubResource("VisualShaderNodeFloatOp_6b8xp")
+nodes/fragment/115/position = Vector2(-480, 2064)
+nodes/fragment/connections = PackedInt32Array(67, 0, 66, 0, 68, 0, 66, 1, 71, 0, 85, 2, 73, 0, 85, 1, 72, 0, 85, 3, 85, 0, 74, 0, 75, 0, 86, 2, 77, 0, 86, 1, 76, 0, 86, 3, 86, 0, 78, 0, 79, 0, 80, 0, 81, 0, 80, 1, 80, 1, 82, 0, 80, 3, 82, 1, 74, 0, 87, 0, 78, 0, 87, 2, 82, 0, 88, 1, 88, 0, 85, 0, 88, 0, 86, 0, 89, 0, 88, 2, 43, 0, 88, 0, 110, 0, 109, 1, 66, 0, 109, 0, 109, 0, 0, 0, 92, 0, 113, 0, 101, 0, 105, 1, 102, 0, 105, 2, 103, 0, 105, 3, 104, 0, 105, 5, 105, 0, 106, 1, 108, 0, 105, 4, 111, 0, 105, 0, 106, 0, 107, 1, 107, 0, 113, 1, 88, 0, 111, 0, 112, 0, 111, 1, 113, 0, 115, 0, 115, 0, 109, 2, 87, 0, 66, 2)
