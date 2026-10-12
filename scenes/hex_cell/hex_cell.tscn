@@ -7,6 +7,7 @@
 [ext_resource type="PackedScene" uid="uid://d1fix0donypra" path="res://shaders/shader_tests/hexagon_cylinder.glb" id="5_6vlsw"]
 [ext_resource type="Shader" uid="uid://cicem1q2tu8kb" path="res://shaders/grass_shader.tres" id="6_pta3i"]
 [ext_resource type="Shader" uid="uid://cnjwxyjrbr78d" path="res://shaders/river_shader.tres" id="7_ajsww"]
+[ext_resource type="Texture2D" uid="uid://besi5p3w8gv5x" path="res://shaders/fade_noise.tres" id="8_g6606"]
 [ext_resource type="Shader" uid="uid://chi46a58tnce7" path="res://shaders/water_shader.tres" id="8_pta3i"]
 [ext_resource type="Script" uid="uid://pe86h5iykjwf" path="res://addons/signal_bus/signal_bus_sender.gd" id="9_ajsww"]
 
@@ -17,7 +18,7 @@ shader_parameter/Color1 = Color(0.043137, 0.14902, 0.203922, 1)
 shader_parameter/Color2 = Color(0.156863, 0.372549, 0.45098, 1)
 shader_parameter/Scale = 1.0
 shader_parameter/Foam_Color = Color(0.443137, 0.815686, 0.972549, 1)
-shader_parameter/Foam_Scale = 1.6840000799900001
+shader_parameter/Foam_Scale = 1.68400007999
 shader_parameter/Foam_Opacity = 0.0910000043225
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_yeiif"]
@@ -26,6 +27,9 @@ shader = ExtResource("6_pta3i")
 shader_parameter/Color1 = Color(0.152941, 0.211765, 0.011765, 1)
 shader_parameter/Color2 = Color(0.419608, 0.364706, 0, 1)
 shader_parameter/Scale = 1.0
+shader_parameter/Fade = 0.0
+shader_parameter/FadeNoiseScale = 0.2
+shader_parameter/FadeNoise = ExtResource("8_g6606")
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_y2k05"]
 render_priority = 0
@@ -34,6 +38,9 @@ shader_parameter/ColorParameter = Color(0.043137, 0.14902, 0.203922, 1)
 shader_parameter/ColorParameter2 = Color(0.156863, 0.372549, 0.45098, 1)
 shader_parameter/Scale = 1.0
 shader_parameter/Distortion = 0.1
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_threat"]
+albedo_color = Color(0.8, 0.1, 0.1, 1)
 
 [sub_resource type="CylinderShape3D" id="CylinderShape3D_kgtat"]
 height = 0.51812744
@@ -76,9 +83,6 @@ _data = {
 &"pulse": SubResource("Animation_ajsww")
 }
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_threat"]
-albedo_color = Color(0.8, 0.1, 0.1, 1)
-
 [node name="HexCell" type="Node3D" unique_id=1032575564]
 transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 0, 0, 0)
 script = ExtResource("1_t7s5s")
@@ -88,26 +92,27 @@ tree_meshes = Array[PackedScene]([ExtResource("2_7os7r"), ExtResource("3_y2k05")
 transform = Transform3D(1, 0, 0, 0, 0.25, 0, 0, 0, 1, 0, 0, 0)
 visible = false
 
-[node name="Cylinder" parent="WaterShader" index="0" unique_id=288164901]
+[node name="Cylinder" parent="WaterShader" index="0" unique_id=158628497]
 surface_material_override/0 = SubResource("ShaderMaterial_6vlsw")
 
 [node name="GrassShader" parent="." unique_id=745426853 instance=ExtResource("5_6vlsw")]
 transform = Transform3D(1, 0, 0, 0, 0.25, 0, 0, 0, 1, 0, 0, 0)
 
-[node name="Cylinder" parent="GrassShader" index="0" unique_id=288164901]
+[node name="Cylinder" parent="GrassShader" index="0" unique_id=158628497]
 surface_material_override/0 = SubResource("ShaderMaterial_yeiif")
 
 [node name="RiverShader" parent="." unique_id=305181412 instance=ExtResource("5_6vlsw")]
 transform = Transform3D(1, 0, 0, 0, 0.25, 0, 0, 0, 1, 0, 0, 0)
+visible = false
 
-[node name="Cylinder" parent="RiverShader" index="0" unique_id=288164901]
+[node name="Cylinder" parent="RiverShader" index="0" unique_id=158628497]
 surface_material_override/0 = SubResource("ShaderMaterial_y2k05")
 
 [node name="ThreatShader" parent="." unique_id=1032575565 instance=ExtResource("5_6vlsw")]
 transform = Transform3D(1, 0, 0, 0, 0.25, 0, 0, 0, 1, 0, 0.01, 0)
 visible = false
 
-[node name="Cylinder" parent="ThreatShader" index="0" unique_id=1920975223]
+[node name="Cylinder" parent="ThreatShader" index="0" unique_id=158628497]
 surface_material_override/0 = SubResource("StandardMaterial3D_threat")
 
 [node name="Area3D" type="Area3D" parent="." unique_id=248437816]
