@@ -6,14 +6,17 @@ extends RefCounted
 ## the cell clear. See HexCell.add_threat()/active_threats for the per-cell
 ## side of this system.
 
-var spawn_interval: float = 10.0
-var cells_per_wave: int = 5
+var spawn_min_interval: float = 15.0
+var spawn_max_interval: float = 45.0
+var min_count_per_wave: int = 1
+var max_count_per_wave: int = 3
 var effect_tick_interval: float = 5.0
-var contamination_spread_min_interval: float = 5.0
-var contamination_spread_max_interval: float = 20.0
+var contamination_spread_min_interval: float = 15.0
+var contamination_spread_max_interval: float = 30.0
 
 var _world: WorldCells
 var _spawn_timer: float = 0.0
+var _next_spawn_interval: float = 0.0
 var _effect_timer: float = 0.0
 var _threatened_cells: Dictionary = {}
 var _contamination_spread_timers: Dictionary = {}
@@ -23,11 +26,13 @@ var _rng := RandomNumberGenerator.new()
 func _init(world: WorldCells) -> void:
 	_world = world
 	_rng.randomize()
+	_next_spawn_interval = _get_random_spawn_interval()
 
 
 ## Forgets every tracked threatened cell, e.g. before a world regeneration.
 func reset() -> void:
 	_spawn_timer = 0.0
+	_next_spawn_interval = _get_random_spawn_interval()
 	_effect_timer = 0.0
 	_threatened_cells.clear()
 	_contamination_spread_timers.clear()
@@ -35,8 +40,9 @@ func reset() -> void:
 
 func tick(delta: float, cells: Dictionary) -> void:
 	_spawn_timer += delta
-	if _spawn_timer >= spawn_interval:
+	if _spawn_timer >= _next_spawn_interval:
 		_spawn_timer = 0.0
+		_next_spawn_interval = _get_random_spawn_interval()
 		_spawn_threat_wave(cells)
 
 	_effect_timer += delta
@@ -57,9 +63,14 @@ func _spawn_threat_wave(cells: Dictionary) -> void:
 		return
 
 	candidates.shuffle()
-	var affected_count: int = mini(cells_per_wave, candidates.size())
+	var wave_count: int = _rng.randi_range(min_count_per_wave, max_count_per_wave)
+	var affected_count: int = mini(wave_count, candidates.size())
 	for index in range(affected_count):
 		_apply_random_threat(candidates[index])
+
+
+func _get_random_spawn_interval() -> float:
+	return _rng.randf_range(spawn_min_interval, spawn_max_interval)
 
 
 func _apply_random_threat(cell: HexCell) -> void:

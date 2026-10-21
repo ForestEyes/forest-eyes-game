@@ -57,8 +57,10 @@ const LEVEL_PROGRESS_VIEWPORT_POOL_SIZE: int = 10
 @export var exact_test_tree_culling: bool = false
 @export var packed_hex_scene: PackedScene = preload("res://scenes/hex_cell/hex_cell.tscn")
 @export_group("Threats")
-@export_range(1.0, 120.0, 0.5) var threat_spawn_interval: float = 10.0
-@export_range(1, 50, 1) var threat_cells_per_wave: int = 5
+@export_range(1.0, 120.0, 0.5) var threat_spawn_min_interval: float = 15.0
+@export_range(1.0, 120.0, 0.5) var threat_spawn_max_interval: float = 45.0
+@export_range(1, 10, 1) var threat_min_count_per_wave: int = 1
+@export_range(1, 10, 1) var threat_max_count_per_wave: int = 3
 @export_range(0.5, 60.0, 0.5) var threat_effect_interval: float = 5.0
 
 const HEX_RADIUS: float = 1.0
@@ -116,8 +118,10 @@ func _sync_culler_config() -> void:
 
 
 func _sync_threat_config() -> void:
-	_threat_manager.spawn_interval = threat_spawn_interval
-	_threat_manager.cells_per_wave = threat_cells_per_wave
+	_threat_manager.spawn_min_interval = threat_spawn_min_interval
+	_threat_manager.spawn_max_interval = threat_spawn_max_interval
+	_threat_manager.min_count_per_wave = threat_min_count_per_wave
+	_threat_manager.max_count_per_wave = threat_max_count_per_wave
 	_threat_manager.effect_tick_interval = threat_effect_interval
 
 
