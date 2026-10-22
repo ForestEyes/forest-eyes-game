@@ -20,10 +20,9 @@ func _init(p_width: int, p_height: int, p_water_border_distance: int, p_terrain:
 
 ## Picks river sources and carves their paths to the coast, then cleans up
 ## any river tiles that ended up overwhelmed by water/other rivers.
-func carve_rivers(cells: Dictionary, rng: RandomNumberGenerator) -> void:
-	var river_count: int = maxi(1, roundi(float(width * height) / 350.0))
+func carve_rivers(cells: Dictionary, rng: RandomNumberGenerator, river_count: int) -> void:
 	var river_sources: Array[Vector2i] = []
-	for river_index in range(river_count):
+	for river_index in range(maxi(0, river_count)):
 		var source := _get_river_source(cells, rng, river_sources)
 		river_sources.append(source)
 		_generate_river_path(cells, source, river_index % 4, rng)

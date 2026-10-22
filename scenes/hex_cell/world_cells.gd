@@ -6,21 +6,25 @@ extends Node3D
 ## scenes/hex_cell/world/ and [HexGrid]).
 
 signal world_generated(center: Vector3, bounds: AABB)
+signal threat_treatment_requested(cell: HexCell)
+signal level_up_confirmation_requested(cell: HexCell)
 
 const LEVEL_PROGRESS_VIEWPORT_SCENE: PackedScene = preload("res://scenes/hex_cell/level_progress_viewport.tscn")
 const LEVEL_PROGRESS_VIEWPORT_POOL_SIZE: int = 10
 
+@export_group("World Generation")
 @export_range(1, 1000, 1) var height: int = 40
 @export_range(1, 1000, 1) var width: int = 80
 @export_range(0, 100, 1) var cell_level: int = 50
+@export_range(0, 15, 1) var max_random_cell_level: int = 15
 @export_range(0, 1000000, 1) var random_seed: int = 0
 @export_range(0, 100, 1) var water_border_distance: int = 10
+@export_range(0, 100, 1) var river_count: int = 1
 @export_group("Coastline")
 @export_range(0, 20, 1) var coastline_bay_depth: int = 4
 @export_range(0.05, 1.0, 0.05) var coastline_bay_frequency: float = 0.5
 @export_group("Terrain Generation Chances")
 @export var forest_chance: float = 0.7
-@export var river_chance: float = 0.2
 @export var water_chance: float = 0.1
 @export var river_neighbor_influence: float = 0.15
 @export var water_neighbor_influence: float = 0.2
@@ -61,7 +65,7 @@ const LEVEL_PROGRESS_VIEWPORT_POOL_SIZE: int = 10
 @export_range(1.0, 120.0, 0.5) var threat_spawn_max_interval: float = 45.0
 @export_range(1, 10, 1) var threat_min_count_per_wave: int = 1
 @export_range(1, 10, 1) var threat_max_count_per_wave: int = 3
-@export_range(0.5, 60.0, 0.5) var threat_effect_interval: float = 5.0
+@export_flags("Fire", "Deforestation", "Contamination") var threat_types_enabled: int = 7
 
 const HEX_RADIUS: float = 1.0
 const HEX_HORIZONTAL_SPACING: float = HEX_RADIUS * 1.5 + 0.05
@@ -70,9 +74,11 @@ const HEX_VERTICAL_SPACING: float = HEX_RADIUS * sqrt(3.0) + 0.025
 var cells: Dictionary[Vector2i, HexCell] = {}
 var is_generated: bool = false
 var generated_tree_count: int = 0
+var explored_cell_count: int = 0
 var life: int = 0
 var water: int = 0
 var science: int = 0
+var _map_interaction_locked: bool = false
 
 var _tree_generation_seed: int = 0
 
@@ -122,7 +128,7 @@ func _sync_threat_config() -> void:
 	_threat_manager.spawn_max_interval = threat_spawn_max_interval
 	_threat_manager.min_count_per_wave = threat_min_count_per_wave
 	_threat_manager.max_count_per_wave = threat_max_count_per_wave
-	_threat_manager.effect_tick_interval = threat_effect_interval
+	_threat_manager.allowed_threat_types = threat_types_enabled
 
 
 func acquire_level_progress_viewport(cell: HexCell) -> Dictionary:
@@ -140,6 +146,7 @@ func update_level_progress_viewport(viewport: SubViewport) -> void:
 func generate_world() -> void:
 	is_generated = false
 	generated_tree_count = 0
+	explored_cell_count = 0
 	life = 0
 	water = 0
 	science = 0
@@ -174,7 +181,7 @@ func generate_world() -> void:
 
 			var coordinate := Vector2i(column, row)
 			cell.name = "HexCell_%d_%d" % [column, row]
-			cell.current_level = _terrain.generate_weighted_cell_level(rng)
+			cell.current_level = _terrain.generate_weighted_cell_level(rng, max_random_cell_level)
 			cell.cell_type = "water"
 			cell.position = _get_cell_position(coordinate)
 			add_child(cell)
@@ -182,6 +189,7 @@ func generate_world() -> void:
 
 	_assign_neighbors()
 	_generate_island_terrain(rng)
+	_initialize_exploration()
 	for cell: HexCell in cells.values():
 		if cell.cell_type == "forest":
 			generated_tree_count += cell.get_tree_count()
@@ -243,6 +251,31 @@ func spend_life(amount: int) -> bool:
 	return true
 
 
+func lose_life(amount: int) -> void:
+	life = maxi(0, life - maxi(0, amount))
+
+
+func spend_resources(life_amount: int, water_amount: int) -> bool:
+	if life_amount < 0 or water_amount < 0 or life < life_amount or water < water_amount:
+		return false
+
+	life -= life_amount
+	water -= water_amount
+	return true
+
+
+func attempt_threat_cure_all(
+	cell: HexCell,
+	life_amount: int,
+	water_amount: int
+) -> ThreatManager.CureResult:
+	return _threat_manager.attempt_cure_all(cell, life_amount, water_amount)
+
+
+func set_map_interaction_locked(is_locked: bool) -> void:
+	_map_interaction_locked = is_locked
+
+
 func rebuild_tree_batches(animated_cell: HexCell = null, animated_from_count: int = -1) -> void:
 	generated_tree_count = 0
 	for cell: HexCell in cells.values():
@@ -257,14 +290,108 @@ func rebuild_tree_batches(animated_cell: HexCell = null, animated_from_count: in
 
 func _generate_island_terrain(rng: RandomNumberGenerator) -> void:
 	_terrain.assign_base_terrain(cells)
-	_river_generator.carve_rivers(cells, rng)
+	_river_generator.carve_rivers(cells, rng, river_count)
 	for cell: HexCell in cells.values():
 		cell.populate_cell()
+
+
+func _initialize_exploration() -> void:
+	for cell: HexCell in cells.values():
+		cell.is_explored = false
+		cell.is_frontier = false
+
+	var center := Vector2i(width / 2, height / 2)
+	var center_cell: HexCell = get_cell(center)
+	if center_cell == null:
+		push_error("WorldCells could not find the center cell to initialize exploration.")
+		return
+
+	var starting_cell := center_cell
+	if starting_cell.cell_type != "forest":
+		starting_cell = _find_nearest_forest_cell(center_cell)
+		if starting_cell == null:
+			center_cell.cell_type = "forest"
+			center_cell.populate_cell()
+			starting_cell = center_cell
+
+	starting_cell.is_explored = true
+	explored_cell_count = 1
+	_reveal_cell_frontier(starting_cell)
+	for cell: HexCell in cells.values():
+		_culler.set_cell_visible(cell, true)
+
+
+func _find_nearest_forest_cell(target: HexCell) -> HexCell:
+	var nearest_cell: HexCell
+	var nearest_distance_squared: float = INF
+	for cell: HexCell in cells.values():
+		if cell.cell_type != "forest":
+			continue
+
+		var distance_squared: float = target.position.distance_squared_to(cell.position)
+		if distance_squared < nearest_distance_squared:
+			nearest_cell = cell
+			nearest_distance_squared = distance_squared
+
+	return nearest_cell
+
+
+func _reveal_cell_frontier(cell: HexCell) -> void:
+	for neighbor: HexCell in cell.neigboring_cells.values():
+		if neighbor != null and not neighbor.is_explored:
+			neighbor.is_frontier = true
+
+
+func handle_cell_click(cell: HexCell, button_index: MouseButton) -> void:
+	if not is_generated or _map_interaction_locked or cell == null:
+		return
+
+	if button_index == MOUSE_BUTTON_LEFT:
+		if not cell.is_explored:
+			if not cell.is_frontier:
+				return
+			var life_cost := 2 * cell.current_level
+			if not spend_life(life_cost):
+				return
+
+			cell.is_frontier = false
+			cell.is_explored = true
+			explored_cell_count += 1
+			_reveal_cell_frontier(cell)
+			_tree_scatter.generate(cells, generated_tree_count)
+			_river_mesh_builder.update_exploration_visibility()
+			cell.pulse()
+			_culler.force_update(cells, _tree_scatter.get_chunks())
+			return
+
+		if not cell.active_threats.is_empty():
+			cell.pulse()
+			threat_treatment_requested.emit(cell)
+			return
+
+		if cell.level_up_pending and cell.requires_level_up_confirmation():
+			cell.pulse()
+			level_up_confirmation_requested.emit(cell)
+			return
+
+		cell.pulse()
+		cell.increase_level(1)
+		if cell.level_up_pending and cell.requires_level_up_confirmation():
+			level_up_confirmation_requested.emit(cell)
+	elif (
+		button_index == MOUSE_BUTTON_RIGHT
+		and cell.is_explored
+		and cell.level_up_pending
+		and cell.requires_level_up_confirmation()
+	):
+		cell.pulse()
+		level_up_confirmation_requested.emit(cell)
 
 
 func _generate_rivers() -> void:
 	var chains: Array[Array] = _river_generator.trace_river_chains(cells)
 	_river_mesh_builder.rebuild(cells, chains)
+	_river_mesh_builder.update_exploration_visibility()
 
 
 func get_cell(coordinate: Vector2i) -> HexCell:

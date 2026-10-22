@@ -10,6 +10,8 @@ signal growth_finished
 const TREE_MIN_DISTANCE: float = 0.150
 const TREE_SCALE_MULTIPLIER: float = 1.5
 
+enum TreeVisibilityState { EXPLORED, FRONTIER }
+
 var _host: Node3D
 var _horizontal_spacing: float
 var _vertical_spacing: float
@@ -21,6 +23,7 @@ var tree_generation_seed: int
 var _generated_tree_root: Node3D
 var _tree_growth_root: Node3D
 var _generated_tree_chunks: Dictionary[Vector2i, Node3D] = {}
+var _frontier_tree_material_overlay: StandardMaterial3D
 var _active_tree_growth_tweens: int = 0
 var _pending_tree_animations: Dictionary = {}
 
@@ -39,6 +42,10 @@ func _init(
 	tree_chunk_size = p_tree_chunk_size
 	exact_test_tree_culling = p_exact_test_tree_culling
 	use_fixed_test_culling = p_use_fixed_test_culling
+	_frontier_tree_material_overlay = StandardMaterial3D.new()
+	_frontier_tree_material_overlay.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	_frontier_tree_material_overlay.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	_frontier_tree_material_overlay.albedo_color = Color(1.0, 1.0, 1.0, 0.55)
 
 
 func get_chunks() -> Dictionary[Vector2i, Node3D]:
@@ -63,7 +70,7 @@ func generate(cells: Dictionary, generated_tree_count: int, animated_cell: HexCe
 
 	var source_cell: HexCell
 	for cell: HexCell in cells.values():
-		if cell.cell_type == "forest" and not cell.tree_meshes.is_empty():
+		if (cell.is_explored or cell.is_frontier) and cell.cell_type == "forest" and not cell.tree_meshes.is_empty():
 			source_cell = cell
 			break
 
@@ -82,25 +89,30 @@ func generate(cells: Dictionary, generated_tree_count: int, animated_cell: HexCe
 	if tree_mesh_data.is_empty():
 		return
 
-	var transforms_by_chunk: Dictionary[Vector2i, Array] = {}
+	var transforms_by_state: Array[Dictionary] = [{}, {}]
 	var generated_tree_positions: Dictionary = {}
 	var animated_tree_data: Array[Dictionary] = []
 	for coordinate: Vector2i in cells:
-		if cells[coordinate].cell_type != "forest":
+		var cell: HexCell = cells[coordinate]
+		if (not cell.is_explored and not cell.is_frontier) or cell.cell_type != "forest":
 			continue
 		var chunk_coordinate := _get_tree_chunk_coordinate(coordinate)
-		if not transforms_by_chunk.has(chunk_coordinate):
+		var state_index: int = TreeVisibilityState.FRONTIER if cell.is_frontier else TreeVisibilityState.EXPLORED
+		var state_chunks: Dictionary = transforms_by_state[state_index]
+		if not state_chunks.has(chunk_coordinate):
 			var chunk_mesh_transforms: Array = []
 			for _mesh_data: Dictionary in tree_mesh_data:
 				chunk_mesh_transforms.append([])
-			transforms_by_chunk[chunk_coordinate] = chunk_mesh_transforms
+			state_chunks[chunk_coordinate] = chunk_mesh_transforms
 
 	for coordinate: Vector2i in cells:
 		var cell: HexCell = cells[coordinate]
-		if cell.cell_type != "forest":
+		if (not cell.is_explored and not cell.is_frontier) or cell.cell_type != "forest":
 			continue
 		var chunk_coordinate := _get_tree_chunk_coordinate(coordinate)
-		var transforms_by_mesh: Array = transforms_by_chunk[chunk_coordinate]
+		var state_index: int = TreeVisibilityState.FRONTIER if cell.is_frontier else TreeVisibilityState.EXPLORED
+		var state_chunks: Dictionary = transforms_by_state[state_index]
+		var transforms_by_mesh: Array = state_chunks[chunk_coordinate]
 		var cell_rng := RandomNumberGenerator.new()
 		cell_rng.seed = _get_cell_tree_seed(coordinate)
 
@@ -167,31 +179,43 @@ func generate(cells: Dictionary, generated_tree_count: int, animated_cell: HexCe
 	_generated_tree_root.name = "GeneratedTrees"
 	_host.add_child(_generated_tree_root)
 
-	for chunk_coordinate: Vector2i in transforms_by_chunk:
-		var chunk_mesh_transforms: Array = transforms_by_chunk[chunk_coordinate]
+	var chunk_coordinates: Dictionary[Vector2i, bool] = {}
+	for state_chunks: Dictionary in transforms_by_state:
+		for chunk_coordinate: Vector2i in state_chunks:
+			chunk_coordinates[chunk_coordinate] = true
+
+	for chunk_coordinate: Vector2i in chunk_coordinates:
 		var chunk_root := Node3D.new()
 		chunk_root.name = "TreeChunk_%d_%d" % [chunk_coordinate.x, chunk_coordinate.y]
 		chunk_root.position = _get_chunk_center(chunk_coordinate)
 		_generated_tree_root.add_child(chunk_root)
 		_generated_tree_chunks[chunk_coordinate] = chunk_root
 
-		for mesh_index: int in range(tree_mesh_data.size()):
-			var transforms: Array = chunk_mesh_transforms[mesh_index]
-			if transforms.is_empty():
+		for state_index in range(transforms_by_state.size()):
+			var state_chunks: Dictionary = transforms_by_state[state_index]
+			if not state_chunks.has(chunk_coordinate):
 				continue
 
-			var multimesh := MultiMesh.new()
-			multimesh.transform_format = MultiMesh.TRANSFORM_3D
-			multimesh.mesh = tree_mesh_data[mesh_index]["mesh"]
-			multimesh.instance_count = transforms.size()
-			for instance_index: int in range(transforms.size()):
-				var local_transform: Transform3D = transforms[instance_index]
-				local_transform.origin -= chunk_root.position
-				multimesh.set_instance_transform(instance_index, local_transform)
+			var chunk_mesh_transforms: Array = state_chunks[chunk_coordinate]
+			for mesh_index: int in range(tree_mesh_data.size()):
+				var transforms: Array = chunk_mesh_transforms[mesh_index]
+				if transforms.is_empty():
+					continue
 
-			var multimesh_instance := MultiMeshInstance3D.new()
-			multimesh_instance.multimesh = multimesh
-			chunk_root.add_child(multimesh_instance)
+				var multimesh := MultiMesh.new()
+				multimesh.transform_format = MultiMesh.TRANSFORM_3D
+				multimesh.mesh = tree_mesh_data[mesh_index]["mesh"]
+				multimesh.instance_count = transforms.size()
+				for instance_index: int in range(transforms.size()):
+					var local_transform: Transform3D = transforms[instance_index]
+					local_transform.origin -= chunk_root.position
+					multimesh.set_instance_transform(instance_index, local_transform)
+
+				var multimesh_instance := MultiMeshInstance3D.new()
+				multimesh_instance.multimesh = multimesh
+				if state_index == TreeVisibilityState.FRONTIER:
+					multimesh_instance.material_overlay = _frontier_tree_material_overlay
+				chunk_root.add_child(multimesh_instance)
 
 	_animate_new_trees(animated_tree_data)
 

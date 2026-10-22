@@ -87,12 +87,15 @@ func set_cell_visible(cell: HexCell, is_visible: bool) -> void:
 	var water_mesh: Node3D = cell.get_node_or_null("WaterShader") as Node3D
 	var grass_mesh: Node3D = cell.get_node_or_null("GrassShader") as Node3D
 	var river_mesh: Node3D = cell.get_node_or_null("RiverShader") as Node3D
+	var fog_overlay: MeshInstance3D = cell.get_node_or_null("FogOverlay") as MeshInstance3D
 	if water_mesh != null:
-		_set_visual_descendants_visible(water_mesh, is_visible and cell.cell_type == "water")
+		_set_visual_descendants_visible(water_mesh, is_visible and cell.is_explored and cell.cell_type == "water")
 	if grass_mesh != null:
-		_set_visual_descendants_visible(grass_mesh, is_visible and (cell.cell_type == "forest" or cell.cell_type == "river"))
+		_set_visual_descendants_visible(grass_mesh, is_visible and cell.is_explored and (cell.cell_type == "forest" or cell.cell_type == "river"))
 	if river_mesh != null:
 		_set_visual_descendants_visible(river_mesh, false)
+	if fog_overlay != null:
+		fog_overlay.visible = is_visible and cell.is_frontier
 
 
 func set_tree_chunk_visible(chunk: Node3D, is_visible: bool) -> void:

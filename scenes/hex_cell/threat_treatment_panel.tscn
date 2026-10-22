@@ -1,0 +1,123 @@
+[gd_scene format=3 uid="uid://cgc7hwxwtpgx1"]
+
+[ext_resource type="Script" uid="uid://bk80paefjlwfv" path="res://scenes/hex_cell/threat_treatment_panel.gd" id="1_panel"]
+
+[node name="ThreatTreatmentPanel" type="Control" unique_id=1905670808]
+z_index = 100
+custom_minimum_size = Vector2(420, 320)
+layout_mode = 3
+anchors_preset = 0
+offset_right = 420.0
+offset_bottom = 320.0
+script = ExtResource("1_panel")
+
+[node name="SubViewportContainer" type="SubViewportContainer" parent="." unique_id=2045735724]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+stretch = true
+
+[node name="SubViewport" type="SubViewport" parent="SubViewportContainer" unique_id=600192224]
+handle_input_locally = false
+size = Vector2i(420, 320)
+render_target_update_mode = 4
+
+[node name="Panel" type="PanelContainer" parent="SubViewportContainer/SubViewport" unique_id=188625993]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="SubViewportContainer/SubViewport/Panel" unique_id=1344388697]
+layout_mode = 2
+theme_override_constants/margin_left = 14
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 14
+theme_override_constants/margin_bottom = 12
+
+[node name="VBoxContainer" type="VBoxContainer" parent="SubViewportContainer/SubViewport/Panel/MarginContainer" unique_id=244325187]
+layout_mode = 2
+theme_override_constants/separation = 7
+
+[node name="TitleLabel" type="Label" parent="SubViewportContainer/SubViewport/Panel/MarginContainer/VBoxContainer" unique_id=308022356]
+layout_mode = 2
+text = "Curar tile"
+horizontal_alignment = 1
+
+[node name="LevelLabel" type="Label" parent="SubViewportContainer/SubViewport/Panel/MarginContainer/VBoxContainer" unique_id=2040416969]
+layout_mode = 2
+text = "Nível do tile: 0"
+horizontal_alignment = 1
+
+[node name="ThreatSummaryLabel" type="Label" parent="SubViewportContainer/SubViewport/Panel/MarginContainer/VBoxContainer" unique_id=1811656047]
+layout_mode = 2
+text = "Ameaças: Queimada"
+horizontal_alignment = 1
+
+[node name="AvailableResourcesLabel" type="Label" parent="SubViewportContainer/SubViewport/Panel/MarginContainer/VBoxContainer" unique_id=1398648320]
+layout_mode = 2
+text = "Disponível: 0 vida | 0 água"
+horizontal_alignment = 1
+
+[node name="LifeRow" type="HBoxContainer" parent="SubViewportContainer/SubViewport/Panel/MarginContainer/VBoxContainer" unique_id=452511893]
+layout_mode = 2
+size_flags_horizontal = 4
+
+[node name="LifeLabel" type="Label" parent="SubViewportContainer/SubViewport/Panel/MarginContainer/VBoxContainer/LifeRow" unique_id=2131094548]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Vida"
+
+[node name="LifeSelector" type="SpinBox" parent="SubViewportContainer/SubViewport/Panel/MarginContainer/VBoxContainer/LifeRow" unique_id=537578462]
+layout_mode = 2
+size_flags_horizontal = 3
+max_value = 0.0
+
+[node name="WaterRow" type="HBoxContainer" parent="SubViewportContainer/SubViewport/Panel/MarginContainer/VBoxContainer" unique_id=912497399]
+layout_mode = 2
+size_flags_horizontal = 4
+
+[node name="WaterLabel" type="Label" parent="SubViewportContainer/SubViewport/Panel/MarginContainer/VBoxContainer/WaterRow" unique_id=1740250002]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Água"
+
+[node name="WaterSelector" type="SpinBox" parent="SubViewportContainer/SubViewport/Panel/MarginContainer/VBoxContainer/WaterRow" unique_id=1586184350]
+layout_mode = 2
+size_flags_horizontal = 3
+max_value = 0.0
+
+[node name="ChanceLabel" type="Label" parent="SubViewportContainer/SubViewport/Panel/MarginContainer/VBoxContainer" unique_id=634256441]
+layout_mode = 2
+text = "Chance de cura: 0%"
+horizontal_alignment = 1
+
+[node name="LevelUpCostLabel" type="Label" parent="SubViewportContainer/SubViewport/Panel/MarginContainer/VBoxContainer" unique_id=1108932430]
+layout_mode = 2
+text = "Custo: 50 Vida"
+horizontal_alignment = 1
+
+[node name="StatusLabel" type="Label" parent="SubViewportContainer/SubViewport/Panel/MarginContainer/VBoxContainer" unique_id=1885575894]
+custom_minimum_size = Vector2(0, 24)
+layout_mode = 2
+horizontal_alignment = 1
+
+[node name="ButtonRow" type="HBoxContainer" parent="SubViewportContainer/SubViewport/Panel/MarginContainer/VBoxContainer" unique_id=1926376460]
+layout_mode = 2
+alignment = 1
+
+[node name="CureButton" type="Button" parent="SubViewportContainer/SubViewport/Panel/MarginContainer/VBoxContainer/ButtonRow" unique_id=1134020876]
+layout_mode = 2
+text = "Restaurar"
+
+[node name="LevelUpButton" type="Button" parent="SubViewportContainer/SubViewport/Panel/MarginContainer/VBoxContainer/ButtonRow" unique_id=604368160]
+layout_mode = 2
+text = "Subir de nível"
+
+[node name="CancelButton" type="Button" parent="SubViewportContainer/SubViewport/Panel/MarginContainer/VBoxContainer/ButtonRow" unique_id=1621534198]
+layout_mode = 2
+text = "Cancelar"

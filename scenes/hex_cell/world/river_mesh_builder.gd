@@ -1,9 +1,8 @@
 class_name RiverMeshBuilder
 extends RefCounted
 
-## Turns ordered river chains (see [RiverGenerator]) into smooth [Curve3D]
-## paths and flowing water meshes, owning the Path3D/MeshInstance3D nodes it
-## creates until [method clear] is called.
+## Turns ordered river chains (see [RiverGenerator]) into smooth curves and
+## per-cell water meshes, owning the mesh nodes until [method clear] is called.
 
 var _host: Node3D
 var _horizontal_spacing: float
@@ -25,8 +24,8 @@ var river_curve_bake_interval: float = 0.1
 var river_shader: Shader
 var river_material: Material
 
-var _river_paths: Array[Path3D] = []
 var _river_mesh_instances: Array[MeshInstance3D] = []
+var _river_mesh_cells: Array[HexCell] = []
 
 
 func _init(host: Node3D, horizontal_spacing: float, vertical_spacing: float, seed_value: int) -> void:
@@ -50,15 +49,17 @@ func rebuild(cells: Dictionary, chains: Array[Array]) -> void:
 
 
 func clear() -> void:
-	for path_node: Path3D in _river_paths:
-		if is_instance_valid(path_node):
-			path_node.free()
-	_river_paths.clear()
-
 	for mesh_node: MeshInstance3D in _river_mesh_instances:
 		if is_instance_valid(mesh_node):
 			mesh_node.free()
 	_river_mesh_instances.clear()
+	_river_mesh_cells.clear()
+
+
+func update_exploration_visibility() -> void:
+	for index in range(_river_mesh_instances.size()):
+		var cell: HexCell = _river_mesh_cells[index]
+		_river_mesh_instances[index].visible = is_instance_valid(cell) and cell.is_explored
 
 
 func _build_river_for_chain(cells: Dictionary, chain: Array[Vector2i]) -> void:
@@ -128,13 +129,6 @@ func _build_river_for_chain(cells: Dictionary, chain: Array[Vector2i]) -> void:
 
 	curve.bake_interval = river_curve_bake_interval
 
-	# Criar nó Path3D
-	var path_node := Path3D.new()
-	path_node.name = "RiverPath_%d_%d" % [chain[0].x, chain[0].y]
-	path_node.curve = curve
-	_host.add_child(path_node)
-	_river_paths.append(path_node)
-
 	# Gerar Mesh 3D a partir dos pontos assados da curva
 	var baked_points: PackedVector3Array = curve.get_baked_points()
 	if baked_points.size() < 2:
@@ -151,26 +145,41 @@ func _build_river_for_chain(cells: Dictionary, chain: Array[Vector2i]) -> void:
 	var scaled_base_width: float = lerpf(river_width, river_max_width, points_ratio)
 
 	var river_seed: int = absi(chain[0].x * 73856093 ^ chain[0].y * 19349663 ^ _seed_value)
-	var river_mesh: ArrayMesh = _create_river_mesh(baked_points, river_source_lake_length, river_seed, scaled_base_width)
-	if river_mesh == null:
-		return
+	var river_meshes := _create_river_meshes(
+		baked_points,
+		chain,
+		river_source_lake_length,
+		river_seed,
+		scaled_base_width
+	)
+	for coordinate: Vector2i in river_meshes:
+		var cell: HexCell = cells.get(coordinate) as HexCell
+		if cell == null:
+			continue
 
-	var mesh_instance := MeshInstance3D.new()
-	mesh_instance.name = "RiverMeshInstance"
-	mesh_instance.mesh = river_mesh
-	if river_material != null:
-		mesh_instance.material_override = river_material
-	elif river_shader != null:
-		var mat := ShaderMaterial.new()
-		mat.shader = river_shader
-		mesh_instance.material_override = mat
-	path_node.add_child(mesh_instance)
-	_river_mesh_instances.append(mesh_instance)
+		var mesh_instance := MeshInstance3D.new()
+		mesh_instance.name = "RiverMeshInstance_%d_%d" % [coordinate.x, coordinate.y]
+		mesh_instance.mesh = river_meshes[coordinate]
+		mesh_instance.visible = cell.is_explored
+		if river_material != null:
+			mesh_instance.material_override = river_material
+		elif river_shader != null:
+			var mat := ShaderMaterial.new()
+			mat.shader = river_shader
+			mesh_instance.material_override = mat
+		_host.add_child(mesh_instance)
+		_river_mesh_instances.append(mesh_instance)
+		_river_mesh_cells.append(cell)
 
 
-func _create_river_mesh(baked_points: PackedVector3Array, source_lake_length: float, river_seed: int = 0, base_river_width: float = -1.0) -> ArrayMesh:
-	var st := SurfaceTool.new()
-	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+func _create_river_meshes(
+	baked_points: PackedVector3Array,
+	chain: Array[Vector2i],
+	source_lake_length: float,
+	river_seed: int = 0,
+	base_river_width: float = -1.0
+) -> Dictionary[Vector2i, ArrayMesh]:
+	var surface_tools: Dictionary[Vector2i, SurfaceTool] = {}
 
 	var count: int = baked_points.size()
 	var river_depth: float = 0.02
@@ -246,70 +255,138 @@ func _create_river_mesh(baked_points: PackedVector3Array, source_lake_length: fl
 			"tr": top_right,
 			"bl": bot_left,
 			"br": bot_right,
+			"center": center_pt,
 			"v": cumulative_distance
 		})
 
 	for k in range(rows.size() - 1):
 		var r1: Dictionary = rows[k]
 		var r2: Dictionary = rows[k + 1]
+		var segment_center: Vector3 = (r1.center + r2.center) * 0.5
+		var nearest_coordinate := _get_nearest_cell_coordinate(segment_center, chain)
+		var segment_coordinates: Array[Vector2i] = [nearest_coordinate]
+		for neighbor: Vector2i in HexGrid.get_all_neighbors(nearest_coordinate).values():
+			if chain.has(neighbor):
+				segment_coordinates.append(neighbor)
 
-		# Superfície superior da água
-		st.set_normal(Vector3.UP)
-		st.set_uv(Vector2(0.0, r1.v))
-		st.add_vertex(r1.tl)
-		st.set_normal(Vector3.UP)
-		st.set_uv(Vector2(1.0, r2.v))
-		st.add_vertex(r2.tr)
-		st.set_normal(Vector3.UP)
-		st.set_uv(Vector2(1.0, r1.v))
-		st.add_vertex(r1.tr)
-
-		st.set_normal(Vector3.UP)
-		st.set_uv(Vector2(0.0, r1.v))
-		st.add_vertex(r1.tl)
-		st.set_normal(Vector3.UP)
-		st.set_uv(Vector2(0.0, r2.v))
-		st.add_vertex(r2.tl)
-		st.set_normal(Vector3.UP)
-		st.set_uv(Vector2(1.0, r2.v))
-		st.add_vertex(r2.tr)
-
-		# Borda lateral esquerda
 		var norm_left: Vector3 = (r1.tl - r1.tr).normalized()
 		norm_left.y = 0.0
 		norm_left = norm_left.normalized()
-
-		st.set_normal(norm_left)
-		st.add_vertex(r1.bl)
-		st.set_normal(norm_left)
-		st.add_vertex(r1.tl)
-		st.set_normal(norm_left)
-		st.add_vertex(r2.tl)
-
-		st.set_normal(norm_left)
-		st.add_vertex(r1.bl)
-		st.set_normal(norm_left)
-		st.add_vertex(r2.tl)
-		st.set_normal(norm_left)
-		st.add_vertex(r2.bl)
-
-		# Borda lateral direita
 		var norm_right: Vector3 = (r1.tr - r1.tl).normalized()
 		norm_right.y = 0.0
 		norm_right = norm_right.normalized()
+		for coordinate: Vector2i in segment_coordinates:
+			var st: SurfaceTool = surface_tools.get(coordinate) as SurfaceTool
+			var is_new_surface_tool: bool = st == null
+			if st == null:
+				st = SurfaceTool.new()
+				st.begin(Mesh.PRIMITIVE_TRIANGLES)
 
-		st.set_normal(norm_right)
-		st.add_vertex(r1.tr)
-		st.set_normal(norm_right)
-		st.add_vertex(r1.br)
-		st.set_normal(norm_right)
-		st.add_vertex(r2.br)
+			var added_geometry := _append_clipped_triangle(
+				st, coordinate, r1.tl, r2.tr, r1.tr, Vector3.UP,
+				Vector2(0.0, r1.v), Vector2(1.0, r2.v), Vector2(1.0, r1.v)
+			)
+			added_geometry = _append_clipped_triangle(
+				st, coordinate, r1.tl, r2.tl, r2.tr, Vector3.UP,
+				Vector2(0.0, r1.v), Vector2(0.0, r2.v), Vector2(1.0, r2.v)
+			) or added_geometry
 
-		st.set_normal(norm_right)
-		st.add_vertex(r1.tr)
-		st.set_normal(norm_right)
-		st.add_vertex(r2.br)
-		st.set_normal(norm_right)
-		st.add_vertex(r2.tr)
+			added_geometry = _append_clipped_triangle(st, coordinate, r1.bl, r1.tl, r2.tl, norm_left) or added_geometry
+			added_geometry = _append_clipped_triangle(st, coordinate, r1.bl, r2.tl, r2.bl, norm_left) or added_geometry
+			added_geometry = _append_clipped_triangle(st, coordinate, r1.tr, r1.br, r2.br, norm_right) or added_geometry
+			added_geometry = _append_clipped_triangle(st, coordinate, r1.tr, r2.br, r2.tr, norm_right) or added_geometry
+			if is_new_surface_tool and added_geometry:
+				surface_tools[coordinate] = st
 
-	return st.commit()
+	var meshes: Dictionary[Vector2i, ArrayMesh] = {}
+	for coordinate: Vector2i in surface_tools:
+		meshes[coordinate] = surface_tools[coordinate].commit()
+	return meshes
+
+
+func _append_clipped_triangle(
+	surface_tool: SurfaceTool,
+	coordinate: Vector2i,
+	point_a: Vector3,
+	point_b: Vector3,
+	point_c: Vector3,
+	normal: Vector3,
+	uv_a: Vector2 = Vector2.ZERO,
+	uv_b: Vector2 = Vector2.ZERO,
+	uv_c: Vector2 = Vector2.ZERO
+) -> bool:
+	var polygon: Array[Dictionary] = [
+		{"position": point_a, "normal": normal, "uv": uv_a},
+		{"position": point_b, "normal": normal, "uv": uv_b},
+		{"position": point_c, "normal": normal, "uv": uv_c},
+	]
+	polygon = _clip_polygon_to_cell(polygon, coordinate)
+	if polygon.size() < 3:
+		return false
+
+	for index in range(1, polygon.size() - 1):
+		for vertex: Dictionary in [polygon[0], polygon[index], polygon[index + 1]]:
+			surface_tool.set_normal(vertex.normal)
+			surface_tool.set_uv(vertex.uv)
+			surface_tool.add_vertex(vertex.position)
+	return true
+
+
+func _clip_polygon_to_cell(polygon: Array[Dictionary], coordinate: Vector2i) -> Array[Dictionary]:
+	var cell_position: Vector3 = _get_cell_position(coordinate)
+	var cell_center := Vector2(cell_position.x, cell_position.z)
+	for corner_index in range(6):
+		if polygon.is_empty():
+			break
+
+		var edge_start: Vector2 = cell_center + HexGrid.corner_point_2d(corner_index)
+		var edge_end: Vector2 = cell_center + HexGrid.corner_point_2d((corner_index + 1) % 6)
+		var edge := edge_end - edge_start
+		var clipped_polygon: Array[Dictionary] = []
+		var previous: Dictionary = polygon.back()
+		var previous_position: Vector3 = previous.position
+		var previous_distance: float = edge.cross(
+			Vector2(previous_position.x, previous_position.z) - edge_start
+		)
+
+		for current: Dictionary in polygon:
+			var current_position: Vector3 = current.position
+			var current_distance: float = edge.cross(
+				Vector2(current_position.x, current_position.z) - edge_start
+			)
+			var previous_inside: bool = previous_distance >= -0.00001
+			var current_inside: bool = current_distance >= -0.00001
+			if previous_inside != current_inside:
+				var intersection_ratio: float = previous_distance / (previous_distance - current_distance)
+				clipped_polygon.append(_interpolate_river_vertex(previous, current, intersection_ratio))
+			if current_inside:
+				clipped_polygon.append(current)
+
+			previous = current
+			previous_position = current_position
+			previous_distance = current_distance
+
+		polygon = clipped_polygon
+	return polygon
+
+
+func _interpolate_river_vertex(a: Dictionary, b: Dictionary, amount: float) -> Dictionary:
+	var normal: Vector3 = a.normal.lerp(b.normal, amount).normalized()
+	return {
+		"position": a.position.lerp(b.position, amount),
+		"normal": normal,
+		"uv": a.uv.lerp(b.uv, amount),
+	}
+
+
+func _get_nearest_cell_coordinate(position: Vector3, chain: Array[Vector2i]) -> Vector2i:
+	var nearest_coordinate: Vector2i = chain[0]
+	var nearest_distance_squared: float = INF
+	var position_2d := Vector2(position.x, position.z)
+	for coordinate: Vector2i in chain:
+		var cell_position: Vector3 = _get_cell_position(coordinate)
+		var distance_squared: float = position_2d.distance_squared_to(Vector2(cell_position.x, cell_position.z))
+		if distance_squared < nearest_distance_squared:
+			nearest_distance_squared = distance_squared
+			nearest_coordinate = coordinate
+	return nearest_coordinate

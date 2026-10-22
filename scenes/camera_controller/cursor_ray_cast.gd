@@ -4,7 +4,7 @@ extends RayCast3D
 const RAY_LENGTH: int = 1000
 
 
-func _input(event: InputEvent) -> void:
+func _unhandled_input(event: InputEvent) -> void:
 	if not event is InputEventMouseButton or not event.pressed:
 		return
 	if event.button_index != MOUSE_BUTTON_LEFT and event.button_index != MOUSE_BUTTON_RIGHT:
@@ -21,11 +21,11 @@ func _input(event: InputEvent) -> void:
 	if not is_colliding():
 		return
 
-	var cell: HexCell = get_collider().get_parent()
-	
-	cell.pulse()
-	
-	if event.button_index == MOUSE_BUTTON_LEFT:
-		cell.increase_level(1)
-	else:
-		cell.confirm_level_up()
+	var cell := get_collider().get_parent() as HexCell
+	if cell == null:
+		return
+
+	var world_cells := cell.world_cells as WorldCells
+	if world_cells == null:
+		return
+	world_cells.handle_cell_click(cell, event.button_index)

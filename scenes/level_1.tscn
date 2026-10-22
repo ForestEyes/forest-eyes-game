@@ -1,0 +1,13 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/base_level.tscn" id="1_base"]
+
+[node name="Level1" instance=ExtResource("1_base")]
+
+[node name="WorldCells" parent="." index="3"]
+height = 25
+width = 25
+max_random_cell_level = 6
+river_count = 3
+threat_spawn_min_interval = 20.0
+threat_max_count_per_wave = 2

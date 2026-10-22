@@ -20,8 +20,6 @@ const LEVEL_PROGRESS_TWEEN_DURATION: float = 0.2
 const LEVEL_PROGRESS_VISIBLE_DURATION: float = 1.0
 
 const LEVEL_PROGRESS_COLOR: Color = Color(0.0, 1.0, 0.0)
-const THREAT_PROGRESS_COLOR: Color = Color(0.85, 0.1, 0.1)
-const THREAT_CLEAR_CLICKS: int = 3
 
 const THREAT_FIRE: StringName = &"fire"
 const THREAT_DEFORESTATION: StringName = &"deforestation"
@@ -36,6 +34,8 @@ const THREAT_COLORS: Dictionary[StringName, Color] = {
 var world_cells: WorldCells
 var level_progress: ProgressBar
 var level_progress_viewport: SubViewport
+var is_explored: bool = false
+var is_frontier: bool = false
 @onready var level_progress_sprite: Sprite3D = $LevelProgressSprite
 @onready var threat_shader: Node3D = get_node_or_null("ThreatShader") as Node3D
 var level_progress_value: float = 0.0
@@ -43,7 +43,6 @@ var level_progress_tween: Tween
 var level_up_pending: bool = false
 
 var active_threats: Dictionary[StringName, bool] = {}
-var threat_progress_value: float = 0.0
 var _threat_material: StandardMaterial3D
 
 var neigboring_cells: Dictionary[StringName, HexCell] = {
@@ -72,7 +71,31 @@ func _ready() -> void:
 	world_cells = get_parent()
 	level_progress_sprite.visible = false
 	_prepare_threat_material()
+	_create_fog_overlay()
 	populate_cell()
+
+
+func _create_fog_overlay() -> void:
+	var grass_node := get_node_or_null("GrassShader") as Node3D
+	var source_mesh := get_node_or_null("GrassShader/Cylinder") as MeshInstance3D
+	if grass_node == null or source_mesh == null or source_mesh.mesh == null:
+		push_error("HexCell requires GrassShader/Cylinder to create its fog overlay.")
+		return
+
+	var overlay := MeshInstance3D.new()
+	overlay.name = "FogOverlay"
+	overlay.mesh = source_mesh.mesh
+	overlay.transform = grass_node.transform * source_mesh.transform
+	overlay.position.y += 0.15
+	overlay.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	var material := StandardMaterial3D.new()
+	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	material.albedo_color = Color(1.0, 1.0, 1.0, 0.68)
+	overlay.material_override = material
+	overlay.visible = false
+	add_child(overlay)
 
 
 func _prepare_threat_material() -> void:
@@ -103,34 +126,28 @@ func _ensure_level_progress_viewport() -> bool:
 
 
 func increase_level(ammount: int, propagate_to_neighbors: bool = true, generate_water: bool = true) -> void:
-	if cell_type != "forest":
+	if cell_type != "forest" or not active_threats.is_empty():
 		return
 
 	increased_level.emit(global_position)
 	if generate_water and world_cells != null:
 		world_cells.add_water(_get_adjacent_water_count() * ammount)
 
-	# Deforestation strips the tile's ability to spread clicks to its neighbors.
 	var neighbor_clicks := 0
-	if propagate_to_neighbors and not active_threats.has(THREAT_DEFORESTATION):
+	if propagate_to_neighbors:
 		if current_level > 10:
 			neighbor_clicks = 2
 		elif current_level > 5:
 			neighbor_clicks = 1
 
 	if world_cells != null:
-		# Contamination caps the tile's productivity to a single point of life per click.
-		var life_gained := 1 if active_threats.has(THREAT_CONTAMINATION) else LIFE_PER_CLICK * ammount
-		world_cells.add_life(life_gained)
+		world_cells.add_life(LIFE_PER_CLICK * ammount)
 
-	if active_threats.is_empty():
-		_advance_level_up_progress(ammount)
-	else:
-		_advance_threat_clear_progress(ammount)
+	_advance_level_up_progress(ammount)
 
 	if neighbor_clicks > 0:
 		for neighboring_cell: HexCell in neigboring_cells.values():
-			if neighboring_cell == null:
+			if neighboring_cell == null or not neighboring_cell.is_explored:
 				continue
 			for _click in range(neighbor_clicks):
 				neighboring_cell.increase_level(1, false, false)
@@ -147,7 +164,7 @@ func _advance_level_up_progress(ammount: int) -> void:
 			level_progress_tween.kill()
 		return
 
-	if level_up_pending and not _requires_life_confirmation():
+	if level_up_pending and not requires_level_up_confirmation():
 		return
 
 	var clicks_required := maxi(1, CLICKS_PER_LEVEL_MULTIPLIER * current_level)
@@ -161,7 +178,7 @@ func _advance_level_up_progress(ammount: int) -> void:
 		LevelProgressViewportPool.set_fill_color(level_progress, LEVEL_PROGRESS_COLOR)
 	level_progress_sprite.visible = true
 	level_up_pending = target_progress >= 100.0
-	var requires_confirmation := level_up_pending and _requires_life_confirmation()
+	var requires_confirmation := level_up_pending and requires_level_up_confirmation()
 	if has_progress_viewport:
 		if level_progress_tween != null and level_progress_tween.is_valid():
 			level_progress_tween.kill()
@@ -185,42 +202,6 @@ func _advance_level_up_progress(ammount: int) -> void:
 		_complete_level_up()
 
 
-func _advance_threat_clear_progress(ammount: int) -> void:
-	var progress_per_click := 100.0 / float(THREAT_CLEAR_CLICKS)
-	var target_progress: float = minf(100.0, threat_progress_value + progress_per_click * ammount)
-	threat_progress_value = target_progress
-
-	var has_progress_viewport := _ensure_level_progress_viewport()
-	if has_progress_viewport:
-		LevelProgressViewportPool.set_fill_color(level_progress, THREAT_PROGRESS_COLOR)
-	level_progress_sprite.visible = true
-
-	if level_progress_tween != null and level_progress_tween.is_valid():
-		level_progress_tween.kill()
-
-	var is_complete := target_progress >= 100.0 - 0.001
-	if has_progress_viewport:
-		level_progress_tween = create_tween()
-		level_progress_tween.set_trans(Tween.TRANS_QUAD)
-		level_progress_tween.set_ease(Tween.EASE_OUT)
-		level_progress_tween.tween_property(level_progress, "value", target_progress, LEVEL_PROGRESS_TWEEN_DURATION)
-		world_cells.update_level_progress_viewport(level_progress_viewport)
-		if is_complete:
-			level_progress_tween.tween_callback(_complete_threat_clear)
-			level_progress_tween.tween_interval(LEVEL_PROGRESS_VISIBLE_DURATION - LEVEL_PROGRESS_TWEEN_DURATION)
-			level_progress_tween.tween_callback(_hide_level_progress)
-	elif is_complete:
-		_complete_threat_clear()
-
-
-func _complete_threat_clear() -> void:
-	active_threats.clear()
-	threat_progress_value = 0.0
-	if level_progress != null:
-		level_progress.value = 0.0
-	_refresh_threat_visuals()
-
-
 ## Adds [param threat] to this cell. Returns false if the threat is already active
 ## or the cell can't be threatened (only forest cells can).
 func add_threat(threat: StringName) -> bool:
@@ -230,6 +211,14 @@ func add_threat(threat: StringName) -> bool:
 	active_threats[threat] = true
 	_refresh_threat_visuals()
 	return true
+
+
+func clear_threats() -> void:
+	if active_threats.is_empty():
+		return
+
+	active_threats.clear()
+	_refresh_threat_visuals()
 
 
 ## Drops the cell one level to simulate fire damage. Returns true if the tree
@@ -272,7 +261,7 @@ func _get_adjacent_water_count() -> int:
 
 
 func confirm_level_up() -> void:
-	if not level_up_pending or not _requires_life_confirmation():
+	if not level_up_pending or not requires_level_up_confirmation():
 		return
 	if level_progress_value < 100.0:
 		return
@@ -285,7 +274,7 @@ func confirm_level_up() -> void:
 	_hide_level_progress()
 
 
-func _requires_life_confirmation() -> bool:
+func requires_level_up_confirmation() -> bool:
 	return current_level == 5 or current_level == 10
 
 

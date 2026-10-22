@@ -1,48 +1,48 @@
 extends Node3D
 
 @onready var world_cells: WorldCells = $WorldCells
-@onready var fps_label: Label = $UserInterface/Panel/MarginContainer/VBoxContainer/FPSLabel
-@onready var life_label: Label = $UserInterface/Panel/MarginContainer/VBoxContainer/LifeLabel
-@onready var water_label: Label = $UserInterface/Panel/MarginContainer/VBoxContainer/WaterLabel
-@onready var science_label: Label = $UserInterface/Panel/MarginContainer/VBoxContainer/ScienceLabel
-@onready var tree_count_label: Label = $UserInterface/Panel/MarginContainer/VBoxContainer/TreeCountLabel
-@onready var regenerate_button: Button = $UserInterface/Panel/MarginContainer/VBoxContainer/RegenerateButton
-@onready var science_button: Button = $UserInterface/Panel/MarginContainer/VBoxContainer/ScienceButton
-@onready var width_slider: HSlider = $UserInterface/Panel/MarginContainer/VBoxContainer/WidthSlider
-@onready var height_slider: HSlider = $UserInterface/Panel/MarginContainer/VBoxContainer/HeightSlider
-@onready var width_value_label: Label = $UserInterface/Panel/MarginContainer/VBoxContainer/WidthValueLabel
-@onready var height_value_label: Label = $UserInterface/Panel/MarginContainer/VBoxContainer/HeightValueLabel
+@onready var fps_label: Label = $UserInterface/FPSLabel
+@onready var life_label: Label = $UserInterface/ResourcesBar/MarginContainer/HBoxContainer/LifeLabel
+@onready var water_label: Label = $UserInterface/ResourcesBar/MarginContainer/HBoxContainer/WaterLabel
+@onready var tree_count_label: Label = $UserInterface/ResourcesBar/MarginContainer/HBoxContainer/TreeCountLabel
+@onready var science_label: Label = $UserInterface/ResourcesBar/MarginContainer/HBoxContainer/ScienceLabel
+@onready var pause_button: Button = $UserInterface/PauseButton
+@onready var pause_menu: PauseMenu = $UserInterface/PauseMenu
+@onready var threat_treatment_panel: ThreatTreatmentPanel = $UserInterface/ThreatTreatmentPanel
 
 func _ready() -> void:
-	regenerate_button.pressed.connect(_on_regenerate_pressed)
-	science_button.pressed.connect(_on_science_button_pressed)
-	width_slider.value_changed.connect(_on_slider_changed)
-	height_slider.value_changed.connect(_on_slider_changed)
-	_update_slider_labels()
+	pause_button.pressed.connect(pause_menu.open_pause_menu)
+	world_cells.threat_treatment_requested.connect(_on_threat_treatment_requested)
+	world_cells.level_up_confirmation_requested.connect(_on_level_up_confirmation_requested)
+	threat_treatment_panel.cure_requested.connect(_on_cure_requested)
+	threat_treatment_panel.level_up_confirmed.connect(_on_level_up_confirmed)
+	threat_treatment_panel.interaction_lock_changed.connect(world_cells.set_map_interaction_locked)
 
 
 func _process(_delta: float) -> void:
 	fps_label.text = "FPS: %d" % Engine.get_frames_per_second()
 	life_label.text = "Vida: %d" % world_cells.life
 	water_label.text = "Água: %d" % world_cells.water
+	tree_count_label.text = "Árvores: %d" % world_cells.generated_tree_count
 	science_label.text = "Ciência: %d" % world_cells.science
-	tree_count_label.text = "Trees: %d" % world_cells.generated_tree_count
 
 
-func _on_regenerate_pressed() -> void:
-	world_cells.width = int(width_slider.value)
-	world_cells.height = int(height_slider.value)
-	world_cells.generate_world()
+func _on_threat_treatment_requested(cell: HexCell) -> void:
+	threat_treatment_panel.open_for_treatment(cell, world_cells.life, world_cells.water)
 
 
-func _on_science_button_pressed() -> void:
-	world_cells.add_science(1)
+func _on_level_up_confirmation_requested(cell: HexCell) -> void:
+	threat_treatment_panel.open_for_level_up(cell, world_cells.life, world_cells.water)
 
 
-func _on_slider_changed(_value: float) -> void:
-	_update_slider_labels()
+func _on_cure_requested(cell: HexCell, life_amount: int, water_amount: int) -> void:
+	var result := world_cells.attempt_threat_cure_all(cell, life_amount, water_amount)
+	threat_treatment_panel.handle_cure_result(result, world_cells.life, world_cells.water)
 
 
-func _update_slider_labels() -> void:
-	width_value_label.text = "Width: %d" % int(width_slider.value)
-	height_value_label.text = "Height: %d" % int(height_slider.value)
+func _on_level_up_confirmed(cell: HexCell) -> void:
+	cell.confirm_level_up()
+	if cell.level_up_pending:
+		threat_treatment_panel.handle_level_up_result(cell, world_cells.life, world_cells.water)
+	else:
+		threat_treatment_panel.close_panel()

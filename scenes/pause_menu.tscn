@@ -1,0 +1,55 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scenes/pause_menu.gd" id="1_pause"]
+
+[node name="PauseMenu" type="Node"]
+process_mode = 3
+script = ExtResource("1_pause")
+
+[node name="Overlay" type="Control" parent="."]
+visible = false
+process_mode = 3
+z_index = 200
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Dimmer" type="ColorRect" parent="Overlay"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.65)
+
+[node name="CenterContainer" type="CenterContainer" parent="Overlay"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Menu" type="VBoxContainer" parent="Overlay/CenterContainer"]
+theme_override_constants/separation = 16
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Overlay/CenterContainer/Menu"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 40
+text = "Jogo pausado"
+horizontal_alignment = 1
+
+[node name="ResumeButton" type="Button" parent="Overlay/CenterContainer/Menu"]
+custom_minimum_size = Vector2(240, 56)
+layout_mode = 2
+text = "Continuar"
+
+[node name="MainMenuButton" type="Button" parent="Overlay/CenterContainer/Menu"]
+custom_minimum_size = Vector2(240, 56)
+layout_mode = 2
+text = "Menu principal"

@@ -29,15 +29,18 @@ func _init(
 	seed_value = p_seed_value
 
 
-func generate_weighted_cell_level(rng: RandomNumberGenerator) -> int:
+func generate_weighted_cell_level(rng: RandomNumberGenerator, max_level: int = 15) -> int:
+	var generated_level: int
 	var bucket_roll := rng.randi_range(1, 11)
 	if bucket_roll <= 5:
-		return 0
-	if bucket_roll <= 8:
-		return rng.randi_range(1, 5)
-	if bucket_roll <= 10:
-		return rng.randi_range(6, 10)
-	return rng.randi_range(11, 15)
+		generated_level = 0
+	elif bucket_roll <= 8:
+		generated_level = rng.randi_range(1, 5)
+	elif bucket_roll <= 10:
+		generated_level = rng.randi_range(6, 10)
+	else:
+		generated_level = rng.randi_range(11, 15)
+	return mini(generated_level, clampi(max_level, 0, 15))
 
 
 ## Assigns "water" or "forest" to every cell and repopulates its visuals.
